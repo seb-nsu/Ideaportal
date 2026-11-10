@@ -1,0 +1,21 @@
+// English texts for the namespace "selfservice" (R3-22).
+export const selfservice: Record<string, string> = {
+  'selfservice.starter.challengeTitle': 'First idea campaign',
+  'selfservice.starter.challengeQuestion': 'What costs us unnecessary time today, and how could it be simpler?',
+  'selfservice.starter.ideaTitle': 'Example idea: a short monthly idea consultation hour',
+  'selfservice.starter.ideaProblem': 'Many ideas remain unspoken because it is unclear whether they are good enough. (This is an example idea; you can reject it or have it deleted.)',
+  'selfservice.starter.ideaSolution': 'Once a month, an open half hour in which anyone can present an idea and submit it directly in the portal.',
+  'selfservice.starter.ideaBenefit': 'More and more mature submissions, faster feedback.',
+  'selfservice.starter.doneTitle': 'Example idea: meetings with a fixed end time',
+  'selfservice.starter.doneProblem': 'Meetings often run over the planned time. (This is an example idea that has already been implemented.)',
+  'selfservice.starter.doneSolution': 'Every invitation states a fixed end time and a goal; the host keeps to it.',
+  'selfservice.starter.doneBenefit': 'Less time in meetings, clearer results.',
+  'selfservice.starter.doneReason': 'Small change that can be made right away.',
+  'selfservice.starter.doneOrgUnit': 'Idea management',
+  'selfservice.starter.doneEvidence': 'Example value: about 40 hours less meeting time in the first month.',
+  'selfservice.signupDisabled': 'Sign-up is switched off.',
+  'selfservice.joinInvalid': 'This invitation link is invalid or has been reset.',
+  'selfservice.accountExists': 'There is already an account with this e-mail address. Please sign in.',
+  'selfservice.demoOff': 'The demo is not enabled.',
+  'selfservice.demoMissing': 'The demo data is missing.',
+};

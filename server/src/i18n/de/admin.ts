@@ -1,0 +1,18 @@
+export const admin = {
+  'admin.weightsSum': 'Die Gewichte müssen zusammen 100 % ergeben.',
+  'admin.settingsInvalid': 'Die Einstellungen sind ungültig.',
+  'admin.channelIds': 'Jeder Zielkanal braucht eine eindeutige ID.',
+  'admin.emailTaken': 'Diese E-Mail-Adresse ist bereits vergeben.',
+  'admin.invite.subject': 'Einladung ins Ideenportal',
+  'admin.invite.intro': '{name} lädt dich ins Ideenportal ein. Mit diesem Link legst du dein Passwort fest (24 Stunden gültig):',
+  'admin.personNotFound': 'Person nicht gefunden.',
+  'admin.ownAdminRole': 'Du kannst dir die Admin-Rolle nicht selbst entziehen.',
+  'admin.auditCsv.time': 'Zeitpunkt',
+  'admin.auditCsv.person': 'Person',
+  'admin.auditCsv.action': 'Aktion',
+  'admin.auditCsv.object': 'Objekt',
+  'admin.auditCsv.id': 'ID',
+  'admin.auditCsv.before': 'Vorher',
+  'admin.auditCsv.after': 'Nachher',
+  'admin.auditCsv.system': 'System',
+} as const;

@@ -1,0 +1,26 @@
+// English texts for the namespace "aiq" (R3-22).
+export const aiq: Record<string, string> = {
+  'aiq.budget.month': 'Stopped before the call: the estimated cost of {estimate} € would exceed the monthly AI budget of {limit} € (spent so far {spent} €).',
+  'aiq.budget.idea': 'Stopped before the call: the estimated cost of {estimate} € would exceed the AI budget of this idea of {limit} € (spent so far {spent} €).',
+  'aiq.budget.estimateNote': 'Cost estimate before the call: {eur} € ({input} input tokens from the prompt length, {output} output tokens as the ceiling).',
+  'aiq.ideaType.internal': 'internal ideas',
+  'aiq.ideaType.product': 'product and customer ideas',
+  'aiq.skipped.webSearch': 'Skipped: web search in the short analysis is switched off for {type} (Settings › AI).',
+  'aiq.skipped.block': 'Skipped: this building block is switched off for {type} (Settings › AI).',
+  'aiq.gate2.unreviewed': 'All AI building blocks must be reviewed before the Gate 2 decision. Not yet reviewed: {list}.',
+  'aiq.review.notReviewable': 'This result has no review status.',
+  'aiq.sample.subject': 'AI sample {month}: please rate the results',
+  'aiq.sample.body': 'For the monthly AI quality check, the result "{kind}" of idea #{number} was selected. Please rate it in the AI section of the idea (sample). The result is rated, not the person.',
+  'aiq.proof.pageFetch': 'Source check (page fetch)',
+  'aiq.proof.sentPageFetch': 'Only the pages of web search hits were requested (address of the page). No idea texts, no names.',
+  // Quality dashboard (R4-08): alarm on deterioration, once per period.
+  'aiq.alarm.subject': 'AI quality {period}: deterioration detected',
+  'aiq.alarm.body': 'In the period {period}, {n} AI metrics got worse compared with the three periods before:',
+  'aiq.alarm.where': 'Details under Settings › AI › Quality dashboard. The metrics are aggregated per agent, not per person.',
+  'aiq.alarm.finding.hitRate': '{agent}: hit rate fell from {before} to {after}',
+  'aiq.alarm.finding.helpfulRate': '{agent}: share "helpful" fell from {before} to {after}',
+  'aiq.alarm.finding.correctionRate': '{agent}: correction rate rose from {before} to {after}',
+  'aiq.alarm.finding.sourceErrorRate': '{agent}: source errors rose from {before} to {after}',
+  'aiq.alarm.finding.errorRate': '{agent}: failure rate of calls rose from {before} to {after}',
+  'aiq.alarm.finding.costPerCall': '{agent}: cost per call rose from {before} to {after}',
+};

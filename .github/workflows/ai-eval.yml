@@ -1,0 +1,53 @@
+name: AI eval
+
+# Test set run of the AI building blocks without a database (R2-12). The built-in rule-based
+# provider always runs; the Anthropic run only when the repository secret ANTHROPIC_API_KEY is set.
+# The job fails when a building block misses its minimum score.
+
+on:
+  workflow_dispatch:
+    inputs:
+      anthropic_model:
+        description: Anthropic model for the second run
+        required: false
+        default: claude-opus-5-5
+      sample:
+        description: Sample size per building block
+        required: false
+        default: '15'
+  schedule:
+    - cron: '17 4 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SAMPLE: ${{ github.event.inputs.sample || '15' }}
+      ANTHROPIC_MODEL: ${{ github.event.inputs.anthropic_model || 'claude-opus-5-5' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Test set with the built-in provider
+        run: npm run eval -w server -- --provider builtin --sample "$SAMPLE" --out "$GITHUB_WORKSPACE/ai-eval-builtin.json" --markdown "$GITHUB_WORKSPACE/ai-eval-builtin.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Test set with Anthropic
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        run: npm run eval -w server -- --provider anthropic --model "$ANTHROPIC_MODEL" --sample "$SAMPLE" --out "$GITHUB_WORKSPACE/ai-eval-anthropic.json" --markdown "$GITHUB_WORKSPACE/ai-eval-anthropic.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload the reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ai-eval-report
+          path: |
+            ai-eval-*.json
+            ai-eval-*.md
+          if-no-files-found: warn
+          retention-days: 30

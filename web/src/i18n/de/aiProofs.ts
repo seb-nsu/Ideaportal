@@ -1,0 +1,18 @@
+export const aiProofs = {
+  'aiProofs.title': 'KI-Nachweise',
+  'aiProofs.intro': 'Je Idee: welche KI-Dienste Daten erhielten, in welcher Region, mit welchem Modell, welche Suchanfragen gesendet wurden und was es kostete. Die Nachweise enthalten keine Ideentexte.',
+  'aiProofs.from': 'Von',
+  'aiProofs.to': 'Bis',
+  'aiProofs.empty': 'Keine KI-Aktionen im Zeitraum.',
+  'aiProofs.caption': 'KI-Nachweise je Idee',
+  'aiProofs.idea': 'Idee',
+  'aiProofs.actions': 'KI-Aktionen',
+  'aiProofs.external': 'davon extern',
+  'aiProofs.searchQueries': 'Suchanfragen',
+  'aiProofs.cost': 'Kosten',
+  'aiProofs.last': 'Zuletzt',
+  'aiProofs.proof': 'Nachweis',
+  'aiProofs.confidential': '#{n} (vertraulich)',
+  'aiProofs.costValue': '{amount} €',
+  'aiProofs.pdf': 'PDF',
+} as const;

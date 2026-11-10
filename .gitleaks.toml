@@ -1,0 +1,15 @@
+# Secret scan in CI (docs/enterprise/qualitaet-und-lieferkette.md). Default rules of gitleaks plus
+# narrow exceptions for test material that is fake by design. Never allow-list production paths.
+title = "Ideenportal gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Test keys and certificates generated for the SAML/OIDC tests only"
+paths = ['''^server/test/fixtures/''']
+
+[[allowlists]]
+description = "Example passwords in server and web tests (generic rule only; real key formats still fail)"
+targetRules = ["generic-api-key"]
+paths = ['''^(server|web)/test/[^/]+\.test\.tsx?$''']

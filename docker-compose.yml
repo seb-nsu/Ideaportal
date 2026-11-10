@@ -1,0 +1,34 @@
+# Local start with one command: docker compose up --build
+# The public demo workspace is created on start (DEMO_MODE=true).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ideenportal
+      POSTGRES_PASSWORD: ideenportal
+      POSTGRES_DB: ideenportal
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ideenportal"]
+      interval: 5s
+      retries: 10
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgres://ideenportal:ideenportal@db:5432/ideenportal
+      PUBLIC_URL: http://localhost:3000
+      MAIL_TRANSPORT: log
+      DEMO_MODE: 'true'
+      # Encrypts AI keys stored per workspace; change for anything beyond local testing
+      SECRET_KEY: local-only-secret-key-change-me
+      # Local testing only: with NODE_ENV=production (image default) the server requires a
+      # SECRET_KEY of at least 32 characters and refuses to start otherwise.
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  db:

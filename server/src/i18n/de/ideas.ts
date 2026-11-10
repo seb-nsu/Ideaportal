@@ -1,0 +1,15 @@
+export const ideas = {
+  'ideas.deleteOwnDrafts': 'Nur eigene Entwürfe können gelöscht werden.',
+  'ideas.noDraftComments': 'Entwürfe können nicht kommentiert werden.',
+  'ideas.commentNotFound': 'Kommentar nicht gefunden.',
+  'ideas.comment.subject': 'Neuer Kommentar zu #{number} „{title}“',
+  'ideas.cannotSupport': 'Diese Idee kannst du nicht unterstützen.',
+  'ideas.support.subject': 'Neue Unterstützung für #{number} „{title}“',
+  'ideas.support.body': '{name} unterstützt deine Idee.',
+  'ideas.attachRights': 'Nur Ideengebende und das Triage-Team können Dateien anhängen.',
+  'ideas.fileEmpty': 'Die Datei ist leer.',
+  'ideas.fileTooLarge': 'Die Datei ist größer als 10 MB.',
+  'ideas.fileNotFound': 'Datei nicht gefunden.',
+  'ideas.cannotDeleteFile': 'Diese Datei kannst du nicht löschen.',
+  'ideas.invalidCursor': 'Die Seitenmarke ist ungültig. Bitte lade die Liste neu.',
+} as const;

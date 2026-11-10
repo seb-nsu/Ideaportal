@@ -1,0 +1,15 @@
+export const ideas = {
+  'ideas.title': 'Ideen',
+  'ideas.search': 'Suche',
+  'ideas.keyword': 'Stichwort',
+  'ideas.topic': 'Themenfeld',
+  'ideas.all': 'alle',
+  'ideas.status': 'Status',
+  'ideas.sort': 'Sortierung',
+  'ideas.sort.new': 'Neueste',
+  'ideas.sort.updated': 'Zuletzt aktualisiert',
+  'ideas.sort.supporters': 'Meiste Unterstützung',
+  'ideas.submit': 'Suchen',
+  'ideas.empty': 'Keine passenden Ideen gefunden.',
+  'ideas.sort.relevance': 'Relevanz',
+} as const;

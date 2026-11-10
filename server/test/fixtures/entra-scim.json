@@ -1,0 +1,60 @@
+{
+  "_comment": "Requests shaped like the Microsoft Entra ID provisioning service (SCIM 2.0), see learn.microsoft.com 'Tutorial: Develop and plan provisioning for a SCIM endpoint'. Names and IDs are invented.",
+  "createUser": {
+    "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User", "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User"],
+    "externalId": "0a21f0f2-8d2a-4f8e-bf98-7363c4aed4ef",
+    "userName": "Lena.Vogel@contoso.example",
+    "active": true,
+    "emails": [{ "primary": true, "type": "work", "value": "Lena.Vogel@contoso.example" }],
+    "meta": { "resourceType": "User" },
+    "name": { "formatted": "Lena Vogel", "familyName": "Vogel", "givenName": "Lena" },
+    "title": "Referentin",
+    "phoneNumbers": [{ "type": "work", "value": "+49 30 1234567" }],
+    "roles": [],
+    "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User": { "department": "Innovation", "employeeNumber": "4711", "manager": { "value": "x" } }
+  },
+  "createUserWithoutUpnMail": {
+    "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+    "externalId": "lvogel2",
+    "userName": "Test_User_ab6490ee-1e48-479e-a20b-2d77186b5dd1",
+    "active": true,
+    "emails": [{ "primary": true, "type": "work", "value": "Test_User_fd0ea19b@contoso.example" }],
+    "name": { "formatted": "givenName familyName", "familyName": "familyName", "givenName": "givenName" }
+  },
+  "patchUserAttributes": {
+    "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+    "Operations": [
+      { "op": "Replace", "path": "displayName", "value": "Lena Vogel-Hart" },
+      { "op": "Add", "path": "emails[type eq \"work\"].value", "value": "Lena.Vogel@contoso.example" },
+      { "op": "Replace", "path": "name.familyName", "value": "Vogel-Hart" },
+      { "op": "Replace", "path": "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:department", "value": "Strategie" },
+      { "op": "Add", "path": "title", "value": "Leiterin" }
+    ]
+  },
+  "patchUserDisable": {
+    "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+    "Operations": [{ "op": "Replace", "path": "active", "value": "False" }]
+  },
+  "patchUserEnable": {
+    "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+    "Operations": [{ "op": "Replace", "path": "active", "value": "True" }]
+  },
+  "createGroup": {
+    "schemas": ["urn:ietf:params:scim:schemas:core:2.0:Group", "http://schemas.microsoft.com/2006/11/ResourceManagement/ADSCIM/Group"],
+    "externalId": "8aa1a0c0-c4c3-4bc0-b4a5-2ef676900159",
+    "displayName": "Ideenportal Triage",
+    "meta": { "resourceType": "Group" }
+  },
+  "patchGroupAddMember": {
+    "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+    "Operations": [{ "op": "Add", "path": "members", "value": [{ "$ref": null, "value": "{userId}" }] }]
+  },
+  "patchGroupRemoveMember": {
+    "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+    "Operations": [{ "op": "Remove", "path": "members", "value": [{ "value": "{userId}" }] }]
+  },
+  "patchGroupRename": {
+    "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+    "Operations": [{ "op": "Replace", "path": "displayName", "value": "Ideenportal Triage" }]
+  }
+}

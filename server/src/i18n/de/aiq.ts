@@ -1,0 +1,26 @@
+// German texts for the namespace "aiq": AI quality and fairness (R2-44, R2-45, R2-46, R2-49).
+export const aiq = {
+  'aiq.budget.month': 'Abgebrochen vor dem Aufruf: Die geschätzten Kosten von {estimate} € würden das monatliche KI-Budget von {limit} € überschreiten (bisher {spent} €).',
+  'aiq.budget.idea': 'Abgebrochen vor dem Aufruf: Die geschätzten Kosten von {estimate} € würden das KI-Budget dieser Idee von {limit} € überschreiten (bisher {spent} €).',
+  'aiq.budget.estimateNote': 'Kostenschätzung vor dem Aufruf: {eur} € ({input} Eingabe-Token aus der Prompt-Länge, {output} Ausgabe-Token als Obergrenze).',
+  'aiq.ideaType.internal': 'interne Ideen',
+  'aiq.ideaType.product': 'Produkt- und Kundenideen',
+  'aiq.skipped.webSearch': 'Übersprungen: Für {type} ist die Websuche in der Kurzanalyse ausgeschaltet (Einstellungen › KI).',
+  'aiq.skipped.block': 'Übersprungen: Dieser Baustein ist für {type} ausgeschaltet (Einstellungen › KI).',
+  'aiq.gate2.unreviewed': 'Vor der Entscheidung an Gate 2 müssen alle KI-Bausteine geprüft sein. Noch ungeprüft: {list}.',
+  'aiq.review.notReviewable': 'Für dieses Ergebnis gibt es keinen Prüfstatus.',
+  'aiq.sample.subject': 'KI-Stichprobe {month}: bitte Ergebnisse bewerten',
+  'aiq.sample.body': 'Für die monatliche Qualitätsprüfung der KI ist das Ergebnis „{kind}“ zur Idee #{number} ausgewählt. Bitte bewerte es im KI-Bereich der Idee (Stichprobe). Bewertet wird das Ergebnis, nicht die Person.',
+  'aiq.proof.pageFetch': 'Quellenprüfung (Seitenabruf)',
+  'aiq.proof.sentPageFetch': 'Nur Abruf der Trefferseiten aus der Websuche (Adresse der Seite). Keine Ideentexte, keine Namen.',
+  // Quality dashboard (R4-08): alarm on deterioration, once per period.
+  'aiq.alarm.subject': 'KI-Qualität {period}: Verschlechterung erkannt',
+  'aiq.alarm.body': 'Im Zeitraum {period} haben sich {n} Kennzahlen der KI gegenüber den drei Zeiträumen davor verschlechtert:',
+  'aiq.alarm.where': 'Details unter Einstellungen › KI › Qualitäts-Dashboard. Die Kennzahlen sind zusammengefasst je Agent, nicht je Person.',
+  'aiq.alarm.finding.hitRate': '{agent}: Trefferquote von {before} auf {after} gesunken',
+  'aiq.alarm.finding.helpfulRate': '{agent}: Anteil „hilfreich“ von {before} auf {after} gesunken',
+  'aiq.alarm.finding.correctionRate': '{agent}: Korrekturrate von {before} auf {after} gestiegen',
+  'aiq.alarm.finding.sourceErrorRate': '{agent}: Quellenfehler von {before} auf {after} gestiegen',
+  'aiq.alarm.finding.errorRate': '{agent}: Fehlerquote der Aufrufe von {before} auf {after} gestiegen',
+  'aiq.alarm.finding.costPerCall': '{agent}: Kosten je Aufruf von {before} auf {after} gestiegen',
+} as const;

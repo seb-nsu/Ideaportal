@@ -1,0 +1,16 @@
+export const guarantee = {
+  'guarantee.heading': 'Unsere Antwortgarantie',
+  'guarantee.promise': 'Jede Idee bekommt innerhalb von {n} Arbeitstagen eine erste Rückmeldung: eine Entscheidung über die Spur oder eine Rückfrage.',
+  'guarantee.noData': 'In den letzten {days} Tagen ist noch keine Frist abgelaufen. Die Quote erscheint, sobald die erste Idee eine Rückmeldung hat oder ihre Frist vorbei ist.',
+  'guarantee.kept': 'eingehalten',
+  'guarantee.below': 'unter dem Ziel',
+  'guarantee.detail': '{met} von {counted} Ideen der letzten {days} Tage rechtzeitig beantwortet',
+  'guarantee.pending.one': '{n} Idee ist noch innerhalb der Frist.',
+  'guarantee.pending.other': '{n} Ideen sind noch innerhalb der Frist.',
+  'guarantee.settings.heading': 'Antwortgarantie',
+  'guarantee.settings.hint': 'Das Versprechen steht mit der Erfüllungsquote der letzten 90 Tage auf der Startseite. Als Rückmeldung zählen die Entscheidung an Gate 1, eine Rückfrage oder das Zusammenführen.',
+  'guarantee.settings.enabled': 'Antwortgarantie auf der Startseite zeigen',
+  'guarantee.settings.workdays': 'Erste Rückmeldung in Arbeitstagen',
+  'guarantee.settings.threshold': 'Hinweis an das Ideenmanagement unter (%)',
+  'guarantee.settings.thresholdHint': 'Triage-Team und Admins bekommen einmal einen Hinweis, wenn die Quote unter diesen Wert fällt. Erst wenn sie sich erholt hat, kommt ein neuer Hinweis.',
+} as const;

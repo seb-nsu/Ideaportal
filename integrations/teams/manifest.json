@@ -1,0 +1,127 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.17",
+  "version": "0.1.0",
+  "id": "{{TEAMS_APP_ID}}",
+  "developer": {
+    "name": "{{PUBLISHER_NAME}}",
+    "websiteUrl": "{{PUBLIC_URL}}",
+    "privacyUrl": "{{PUBLIC_URL}}/datenschutz",
+    "termsOfUseUrl": "{{PUBLIC_URL}}/nutzungsbedingungen"
+  },
+  "name": {
+    "short": "Ideenportal",
+    "full": "Ideenportal – Ideen einreichen und Rückfragen beantworten"
+  },
+  "description": {
+    "short": "Ideen in Teams einreichen und Rückfragen beantworten.",
+    "full": "Mit dem Ideenportal reichst du Ideen direkt aus Microsoft Teams ein (Kurzformular mit Titel, Problem und Lösung) und beantwortest Rückfragen zu deinen Ideen. Benachrichtigungen kommen mit Link zur Idee. Titel vertraulicher Ideen erscheinen nie in Teams."
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "accentColor": "#0F766E",
+  "staticTabs": [
+    {
+      "entityId": "portal",
+      "name": "Ideenportal",
+      "contentUrl": "{{PUBLIC_URL}}/",
+      "websiteUrl": "{{PUBLIC_URL}}/",
+      "scopes": [
+        "personal"
+      ]
+    }
+  ],
+  "composeExtensions": [
+    {
+      "botId": "{{BOT_APP_ID}}",
+      "commands": [
+        {
+          "id": "submitIdea",
+          "type": "action",
+          "title": "Idee einreichen",
+          "description": "Kurzformular: Titel, Problem, Lösung",
+          "context": [
+            "compose",
+            "commandBox"
+          ],
+          "fetchTask": false,
+          "parameters": [
+            {
+              "name": "title",
+              "title": "Titel",
+              "description": "Worum geht es? (mindestens 3 Zeichen)",
+              "inputType": "text"
+            },
+            {
+              "name": "problem",
+              "title": "Problem",
+              "description": "Welches Problem löst die Idee?",
+              "inputType": "textarea"
+            },
+            {
+              "name": "solution",
+              "title": "Lösung",
+              "description": "Wie sieht die Lösung aus?",
+              "inputType": "textarea"
+            }
+          ]
+        },
+        {
+          "id": "answerQuestion",
+          "type": "action",
+          "title": "Rückfrage beantworten",
+          "description": "Antwort auf eine Rückfrage zu deiner Idee",
+          "context": [
+            "compose",
+            "commandBox"
+          ],
+          "fetchTask": false,
+          "parameters": [
+            {
+              "name": "number",
+              "title": "Ideennummer",
+              "description": "z. B. 12",
+              "inputType": "text"
+            },
+            {
+              "name": "answer",
+              "title": "Antwort",
+              "description": "Deine Antwort",
+              "inputType": "textarea"
+            }
+          ]
+        },
+        {
+          "id": "link",
+          "type": "action",
+          "title": "Konto verbinden",
+          "description": "Code aus „Mein Konto“ im Portal",
+          "context": [
+            "commandBox"
+          ],
+          "fetchTask": false,
+          "parameters": [
+            {
+              "name": "code",
+              "title": "Code",
+              "description": "8 Zeichen",
+              "inputType": "text"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "identity"
+  ],
+  "validDomains": [
+    "{{PUBLIC_HOST}}"
+  ],
+  "webApplicationInfo": {
+    "id": "{{BOT_APP_ID}}",
+    "resource": "api://{{PUBLIC_HOST}}/{{BOT_APP_ID}}"
+  }
+}

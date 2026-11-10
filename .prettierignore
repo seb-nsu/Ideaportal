@@ -1,0 +1,11 @@
+# Generated, exported or third-party content: never reformat.
+package-lock.json
+**/dist/
+**/coverage/
+docs/
+backlog/
+integrations/
+*.md
+server/testset/
+server/templates/
+e2e/screenshots/

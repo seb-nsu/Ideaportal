@@ -1,0 +1,67 @@
+# Static code analysis with CodeQL (JavaScript/TypeScript): pushes to main, pull requests to main
+# that change code or dependencies, and once a week, so new queries also run over unchanged code.
+# Results: Security › Code scanning.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'web/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/codeql.yml'
+  schedule:
+    - cron: '23 4 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: javascript-typescript
+          build-mode: none
+          queries: security-extended
+      # Code scanning (the Security tab) needs GitHub Code Security on private repositories. So the
+      # analysis does not depend on it: results go to a SARIF file, findings of level "error" fail
+      # the job, the file is kept as an artifact, and the upload to code scanning is best effort.
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: /language:javascript-typescript
+          upload: never
+          output: sarif-results
+      - name: Fail on findings of level error
+        run: |
+          total=$(jq '[.runs[].results[]] | length' sarif-results/*.sarif)
+          errors=$(jq '[.runs[].results[] | select(.level == "error")] | length' sarif-results/*.sarif)
+          echo "CodeQL: $total finding(s), $errors of level error" | tee -a "$GITHUB_STEP_SUMMARY"
+          jq -r '.runs[].results[] | "- \(.level) \(.ruleId): \(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine) \(.message.text | split("\n")[0])"' sarif-results/*.sarif | tee -a "$GITHUB_STEP_SUMMARY"
+          test "$errors" -eq 0
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: codeql-sarif
+          path: sarif-results
+      - name: Upload to code scanning (only if enabled for the repository)
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          sarif_file: sarif-results
+          category: /language:javascript-typescript

@@ -1,0 +1,16 @@
+export const success = {
+  'success.title': 'Erfolge',
+  'success.intro': 'Umgesetzte Ideen und was sie bewirkt haben. Namen erscheinen nur, wenn die Ideengebenden zugestimmt haben. In „Mein Konto“ kannst du die Nennung abschalten.',
+  'success.empty': 'Noch keine veröffentlichten Erfolgsgeschichten.',
+  'success.impact': 'Wirkung:',
+  'success.ideaBy': 'Idee von {names}',
+  'success.viewCertificate': 'Urkunde ansehen',
+  'success.back': 'Zurück zu den Erfolgen',
+  'success.print': 'Drucken',
+  'success.certificate': 'Urkunde',
+  'success.thanks': 'Mit Dank und Anerkennung für die umgesetzte Idee',
+  'success.ideaTitle': '„{title}“',
+  'success.noNames': 'Die Ideengebenden möchten nicht namentlich genannt werden.',
+  'success.impactText': 'Wirkung: {text}',
+  'success.publishedOn': 'Veröffentlicht am {date}',
+} as const;

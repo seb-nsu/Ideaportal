@@ -1,0 +1,15 @@
+export const home = {
+  'home.hello': 'Hallo {name}!',
+  'home.activeChallenges': 'Aktive Challenges',
+  'home.challengeMeta': 'bis {date} · {n} Idee(n)',
+  'home.openTasks.one': 'Du hast {n} offene Aufgabe.',
+  'home.openTasks.other': 'Du hast {n} offene Aufgaben.',
+  'home.openTasksLink': 'Zu den Aufgaben',
+  'home.dueOn': 'Antwort bis {date}.',
+  'home.myIdeas': 'Meine Ideen',
+  'home.myIdeasEmpty': 'Du hast noch keine Idee eingereicht.',
+  'home.newIdeas': 'Neue Ideen',
+  'home.noIdeas': 'Noch keine Ideen.',
+  'home.browseAll': 'Alle Ideen durchsuchen',
+  'home.successes': 'Erfolge',
+} as const;

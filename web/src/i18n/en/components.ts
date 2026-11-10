@@ -1,0 +1,20 @@
+// English texts for the namespace "components" (R3-22).
+export const components: Record<string, string> = {
+  'components.loadError': 'Error while loading',
+  'components.unknownError': 'Unknown error',
+  'components.deadline.paused': 'Deadline paused ({n} working days left)',
+  'components.deadline.remaining.one': '{n} working day left (until {date})',
+  'components.deadline.remaining.other': '{n} working days left (until {date})',
+  'components.deadline.overdue.one': '{n} working day overdue',
+  'components.deadline.overdue.other': '{n} working days overdue',
+  'components.ideaType.product': 'Product/customer',
+  'components.ideaType.internal': 'internal',
+  'components.anonymous': 'anonymous',
+  'components.supporters': '{n} supporters',
+  'components.comments': '{n} comments',
+  'components.confidential': 'confidential',
+  'components.change': 'change',
+  'components.searchName': 'Search name …',
+  'components.searchResults': 'Search results',
+  'components.loadMore': 'Load more',
+};

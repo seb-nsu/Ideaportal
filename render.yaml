@@ -1,0 +1,94 @@
+# Deployment template for Render (https://render.com/docs/blueprint-spec), region Frankfurt (EU).
+# Creates the web app from the Dockerfile and a PostgreSQL database.
+# Free plans for the public demo: the app sleeps when idle and the free database expires after
+# about 30 days. For a lasting pilot switch to paid plans (e.g. starter and basic-256mb).
+services:
+  - type: web
+    name: ideenportal
+    runtime: docker
+    autoDeployTrigger: checksPass # deploy only after the GitHub checks (CI) are green
+    region: frankfurt
+    plan: free
+    healthCheckPath: /api/health/ready
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ideenportal-db
+          property: connectionString
+      - key: PUBLIC_URL
+        sync: false # e.g. https://ideenportal.onrender.com
+      - key: COOKIE_SECURE
+        value: 'true'
+      - key: SIGNUP_ENABLED
+        value: 'true'
+      - key: DEMO_MODE
+        value: 'true'
+      - key: SMTP_URL
+        sync: false # e.g. smtps://user:password@smtp.example.com:465
+      - key: MAIL_FROM
+        sync: false # e.g. Ideenportal <no-reply@example.com>
+      - key: SECRET_KEY
+        generateValue: true # encrypts AI keys stored per workspace
+      - key: METRICS_TOKEN
+        sync: false # optional: bearer token for /api/metrics (Prometheus) and the details of /api/health
+      - key: ANTHROPIC_API_KEY
+        sync: false # optional platform key
+      - key: ALERT_EMAIL
+        sync: false # operator address for health alerts (R1-05)
+      - key: ALERT_WEBHOOK_URL
+        sync: false # optional: Teams or Slack incoming webhook for health alerts
+      # Hosting details for the legal texts and the list of sub-processors (R3-08, R3-11).
+      - key: HOSTING_PROVIDER
+        value: Render Services, Inc.
+      - key: HOSTING_REGION
+        value: Frankfurt am Main (EU)
+      - key: HOSTING_LOCATION
+        value: eu
+      - key: OPERATOR_NAME
+        sync: false # legal name of the provider shown in terms, privacy policy and AVV
+      - key: OPERATOR_ADDRESS
+        sync: false
+      - key: OPERATOR_EMAIL
+        sync: false
+      - key: PRIVACY_CONTACT
+        sync: false # data protection officer or privacy contact
+
+  # Staging (R1-05): same image, own database, no public sign-up. Deploys from the branch
+  # "staging" so changes are checked before they reach the demo and the pilot.
+  - type: web
+    name: ideenportal-staging
+    runtime: docker
+    autoDeployTrigger: checksPass # deploy only after the GitHub checks (CI) are green
+    region: frankfurt
+    plan: free
+    branch: staging
+    healthCheckPath: /api/health/ready
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ideenportal-staging-db
+          property: connectionString
+      - key: PUBLIC_URL
+        sync: false # e.g. https://ideenportal-staging.onrender.com
+      - key: COOKIE_SECURE
+        value: 'true'
+      - key: SIGNUP_ENABLED
+        value: 'false'
+      - key: DEMO_MODE
+        value: 'true'
+      - key: MAIL_TRANSPORT
+        value: log
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALERT_WEBHOOK_URL
+        sync: false
+
+databases:
+  - name: ideenportal-db
+    region: frankfurt
+    plan: free
+    postgresMajorVersion: '16'
+  - name: ideenportal-staging-db
+    region: frankfurt
+    plan: free
+    postgresMajorVersion: '16'

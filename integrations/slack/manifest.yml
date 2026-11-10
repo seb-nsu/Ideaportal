@@ -1,0 +1,32 @@
+# Slack app manifest for the Ideenportal (R3-16). Create the app per workspace under
+# https://api.slack.com/apps › "Create New App" › "From an app manifest". Replace
+# {{PUBLIC_URL}} and {{WORKSPACE_ID}} with the addresses shown under Einstellungen › Slack und Teams.
+display_information:
+  name: Ideenportal
+  description: Ideen einreichen, Rückfragen beantworten, Benachrichtigungen mit Link zur Idee.
+  background_color: "#0f766e"
+features:
+  bot_user:
+    display_name: Ideenportal
+    always_online: false
+  slash_commands:
+    - command: /idee
+      url: "{{PUBLIC_URL}}/api/integrations/slack/{{WORKSPACE_ID}}/commands"
+      description: Idee einreichen oder Rückfrage beantworten
+      usage_hint: "Titel | Problem | Lösung  ·  antwort #12 Text  ·  hilfe"
+      should_escape: false
+oauth_config:
+  scopes:
+    bot:
+      - chat:write
+      - commands
+      - users:read
+      - users:read.email
+      - im:write
+settings:
+  interactivity:
+    is_enabled: true
+    request_url: "{{PUBLIC_URL}}/api/integrations/slack/{{WORKSPACE_ID}}/interactions"
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
