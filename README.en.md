@@ -8,6 +8,29 @@ AI-supported idea management for innovation and strategy teams in companies with
 
 The concept and project documents in `docs/` are written in German; the documents for customers in `docs/enterprise/` exist in both languages.
 
+## My role and key decisions
+
+I am the product owner of this project. The concept, the requirements, the backlog, the priorities and the acceptance are mine; the code was written by AI agents (Claude Code) working to my specification.
+
+| Decision | Why | Where to read it (German) |
+| --- | --- | --- |
+| Answer guarantee: idea flow with a fast track, three gates and a deadline engine | Every idea ends in a justified state, none is left lying | [Product concept](docs/02-produktkonzept/produktkonzept.md) |
+| The AI does the groundwork, people decide at the gates | The AI never rates people and never rejects; every figure has a source or is marked as an estimate | [Product concept, section on the AI concept](docs/02-produktkonzept/produktkonzept.md) |
+| Positioned as a decision and impact system (version 3) | AI-written analysis is market standard in 2026 and no longer a unique selling point | [Review V3 follow-up](docs/05-review-v3/einarbeitung.md) |
+| Target group: innovation and strategy teams, 250–5,000 employees, DACH | No corporations above 20,000 employees, no US market; product teams only as a module | [Review V3 follow-up](docs/05-review-v3/einarbeitung.md) |
+| Internal use and SaaS in parallel from the same code, multi-tenant from day one | The internal deployment is the first tenant | [ADR 0001](docs/adr/0001-technik-und-mandantenmodell.md) |
+| Trust before growth | Security, operations and the three AI trust risks are fixed before demo and pilot | [Review V3 follow-up](docs/05-review-v3/einarbeitung.md) |
+| Suggestion scheme module deliberately not built | The decision follows after 10 interviews with industrial customers | [Work packages](docs/arbeitspakete.md) |
+
+- **Concept:** [product concept](docs/02-produktkonzept/produktkonzept.md) · [implementation concept](docs/03-umsetzungskonzept/umsetzungskonzept.md)
+- **Decisions:** [dated decision list](CLAUDE.md#getroffene-entscheidungen) · [architecture decisions](docs/adr/) · [go/no-go](docs/release-0/business/go-no-go.md)
+- **Backlog:** [146 stories in four releases](backlog/backlog.csv) · [work packages and open points](docs/arbeitspakete.md)
+- **Review:** [360-degree review and follow-up](docs/05-review-v3/)
+
+![Release plan: pilot after 6 months, market launch after about 15 months](docs/diagramme/releaseplan.png)
+
+![Status logic: every idea ends in a justified state](docs/diagramme/status-logik.png)
+
 ## Quick start
 
 With Docker (a database and the app, public demo switched on):

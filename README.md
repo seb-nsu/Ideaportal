@@ -6,6 +6,29 @@ KI-gestütztes Ideenmanagement für Innovations- und Strategieteams in Unternehm
 
 **Stand:** Konzept Version 3 (12.10.2026) nach dem 360-Grad-Review in [`docs/05-review-v3/`](docs/05-review-v3/); Vorgehen in fünf Phasen im Umsetzungskonzept, Abschnitt 4; Reihenfolge der Arbeit in [`docs/arbeitspakete.md`](docs/arbeitspakete.md). Release 1 ist für den Pilotbetrieb als Capstone-Produkt gebaut: Teams legen ihren Arbeitsbereich selbst an, laden Kolleg:innen per Link ein und brauchen keinen Firmen-Login. Stand je Story in [`docs/release-1/umsetzungsstand.md`](docs/release-1/umsetzungsstand.md). Release 2 (Ausarbeitung, Gremium, KI-Analysen mit einstellbaren Modellen) ist gebaut, Stand in [`docs/release-2/umsetzungsstand.md`](docs/release-2/umsetzungsstand.md). Seit 13.10.2026 sind auch Release 3 (Firmen-Login, SCIM, API, Teams und Slack, Konnektoren, Pakete, externe Beteiligung, Einsatzfelder, Compliance) und Release 4 (KI-Qualität, Erkennen, Wirkung und Lernen) gebaut, soweit es ohne bezahlte Dienste und echte Nutzer:innen geht; Stand in [`docs/release-3/umsetzungsstand.md`](docs/release-3/umsetzungsstand.md) und [`docs/release-4/umsetzungsstand.md`](docs/release-4/umsetzungsstand.md), offene Punkte für den Product Owner am Ende von [`docs/arbeitspakete.md`](docs/arbeitspakete.md). Das Modul Vorschlagswesen ist nicht gebaut. Die Ergebnisse von Release 0 (UX, Prozess, Datenschutz, Business) liegen in [`docs/release-0/`](docs/release-0/README.md). Betrieb und KI-Einrichtung in [`docs/betrieb.md`](docs/betrieb.md). Unterlagen für Enterprise-Kund:innen (Sicherheit, SLA, Upgrades, Admin-Handbuch) in [`docs/enterprise/`](docs/enterprise/README.md), auf Deutsch und Englisch.
 
+## Meine Rolle und wichtigste Entscheidungen
+
+Ich bin Product Owner dieses Projekts. Konzept, Anforderungen, Backlog, Priorisierung und Abnahme stammen von mir; den Code haben KI-Agenten (Claude Code) nach meiner Spezifikation geschrieben.
+
+| Entscheidung | Begründung | Nachzulesen in |
+| --- | --- | --- |
+| Antwortgarantie: Ideenfluss mit Schnellspur, drei Gates und Fristen-Engine | Jede Idee endet in einem begründeten Zustand, keine bleibt liegen | [Produktkonzept](docs/02-produktkonzept/produktkonzept.md) |
+| Die KI arbeitet vor, Menschen entscheiden an den Gates | Die KI bewertet keine Personen und lehnt nie ab; jede Zahl hat eine Quelle oder ist als Schätzung markiert | [Produktkonzept, Abschnitt KI-Konzept](docs/02-produktkonzept/produktkonzept.md) |
+| Positionierung als Entscheidungs- und Wirkungssystem (Version 3) | KI-Ausarbeitung ist 2026 Marktstandard und taugt nicht als Alleinstellung | [Einarbeitung Review V3](docs/05-review-v3/einarbeitung.md) |
+| Zielgruppe: Innovations- und Strategieteams, 250–5.000 Mitarbeitende, DACH | Keine Konzerne über 20.000 Mitarbeitende, kein US-Markt; Produktteams nur als Modul | [Einarbeitung Review V3](docs/05-review-v3/einarbeitung.md) |
+| Intern und SaaS parallel aus demselben Code, mandantenfähig ab Tag 1 | Der interne Einsatz ist der erste Mandant | [ADR 0001](docs/adr/0001-technik-und-mandantenmodell.md) |
+| Vertrauen vor Ausbau | Sicherheit, Betrieb und die drei KI-Vertrauensrisiken werden vor Demo und Pilot behoben | [Einarbeitung Review V3](docs/05-review-v3/einarbeitung.md) |
+| Modul Vorschlagswesen bewusst nicht gebaut | Die Entscheidung fällt erst nach 10 Interviews mit Industriekunden | [Arbeitspakete](docs/arbeitspakete.md) |
+
+- **Konzept:** [Produktkonzept](docs/02-produktkonzept/produktkonzept.md) · [Umsetzungskonzept](docs/03-umsetzungskonzept/umsetzungskonzept.md)
+- **Entscheidungen:** [Entscheidungsliste mit Datum](CLAUDE.md#getroffene-entscheidungen) · [Architekturentscheidungen](docs/adr/) · [Go/No-go](docs/release-0/business/go-no-go.md)
+- **Backlog:** [146 Stories in vier Releases](backlog/backlog.csv) · [Arbeitspakete und offene Punkte](docs/arbeitspakete.md)
+- **Review:** [360-Grad-Review und Einarbeitung](docs/05-review-v3/)
+
+![Releaseplan: Pilot nach 6 Monaten, Marktstart nach etwa 15 Monaten](docs/diagramme/releaseplan.png)
+
+![Status-Logik: Jede Idee endet in einem begründeten Zustand](docs/diagramme/status-logik.png)
+
 ## Schnellstart
 
 Mit Docker (eine Datenbank und die App, öffentliche Demo eingeschaltet):
