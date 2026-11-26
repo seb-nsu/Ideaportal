@@ -107,7 +107,7 @@ docs/
   02-produktkonzept/    Produktkonzept intern & SaaS (md)
   03-umsetzungskonzept/ Umsetzungskonzept mit Backlog (md)
   05-review-v3/         360-Grad-Review V3 (Produkt/Technik, Markt/Wettbewerb) und Einarbeitung
-  diagramme/            Diagramme als PNG
+  diagramme/            Diagramme als PNG, Landkarte von Ideenfluss und KI-Agenten (ideenportal-landkarte.html)
   release-0 … release-4/ Ergebnisse von Release 0, Umsetzungsstand je Story ab Release 1
   arbeitspakete.md      Arbeitspakete Version 3 mit Stand je Paket
 backlog/
