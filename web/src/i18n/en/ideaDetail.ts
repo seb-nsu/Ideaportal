@@ -21,6 +21,7 @@ export const ideaDetail: Record<string, string> = {
   'ideaDetail.event.meeting_scheduled': 'Scheduled for committee meeting',
   'ideaDetail.event.experiment_started': 'Experiment started',
   'ideaDetail.event.experiment_result': 'Experiment result',
+  'ideaDetail.event.experiment_applied': 'Measured value taken into the business case',
   'ideaDetail.event.impact_review': 'Impact review confirmed',
   'ideaDetail.event.success_story': 'Success story published',
   'ideaDetail.event.benefit_confirmed': 'Actual benefit reviewed',

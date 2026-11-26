@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { combineLenses } from '../src/ai/agents.js';
 import { computeBusinessCase, computeLever, computeMarketSize } from '../src/ai/calc.js';
+import { readiness } from '../src/ai/readiness.js';
 import { findInjections, normalizeSections, type Source } from '../src/ai/content.js';
 import { configHash, loadTestSet } from '../src/ai/eval.js';
 import { setProviderFactory, type GenerateRequest, type ModelProvider } from '../src/ai/providers.js';
@@ -145,6 +147,57 @@ describe('calculations in code (R2-26, R2-27, R2-28)', () => {
     expect(pess.netOverHorizon).toBe(6_000 * 3 - 20_000);
     expect(opt.netOverHorizon).toBe(29_000 * 3 - 5_000);
     expect(bc.sensitivity[0].id).toBe('benefit');
+    expect(bc.keyDriver?.id).toBe('benefit');
+    expect(bc.rampMonths).toBe(0);
+    // The key driver has no source: flagged.
+    expect(bc.flags).toEqual(['key_driver_unsourced']);
+  });
+
+  it('ramps the benefit up month by month; running costs count from month 1', () => {
+    const items = [
+      { id: 'benefit', label: 'Nutzen', unit: '€', kind: 'benefit' as const, low: 12_000, base: 12_000, high: 12_000, sources: [1] },
+      { id: 'once', label: 'Einführung', unit: '€', kind: 'one_off_cost' as const, low: 6_000, base: 6_000, high: 6_000, sources: [1] },
+    ];
+    expect(computeBusinessCase(items, 1, 0).scenarios[1]).toMatchObject({ paybackMonths: 6, netOverHorizon: 6_000 });
+    // 6 months ramp: 1/6 … 6/6 of 1,000 € a month = 3,500 €, then 1,000 € a month: 2.5 more months.
+    const ramped = computeBusinessCase(items, 1, 6);
+    expect(ramped.rampMonths).toBe(6);
+    expect(ramped.scenarios[1]).toMatchObject({ annualNet: 12_000, paybackMonths: 8.5, netOverHorizon: 3_500 });
+    expect(ramped.flags).toEqual([]);
+    // Running costs higher than the benefit: flagged, no payback.
+    const losing = computeBusinessCase([...items, { id: 'run', label: 'Betrieb', unit: '€', kind: 'running_cost' as const, low: 13_000, base: 13_000, high: 13_000, sources: [] }], 3, 6);
+    expect(losing.scenarios[1].paybackMonths).toBeNull();
+    expect(losing.flags).toContain('running_exceeds_benefit');
+    // A measured value counts as backed up.
+    const measured = computeBusinessCase([{ ...items[0], sources: [], measured: { experimentId: 'x', value: 12_000, at: '2026-11-26' } }, items[1]], 1, 0);
+    expect(measured.flags).not.toContain('key_driver_unsourced');
+  });
+
+  it('combines the three lenses in code: shared risks first, conditions merged (after founder-skill "board")', () => {
+    const lens = (risks: string[], conditions: string[]) => ({ strengths: [], risks: risks.map((text) => ({ text, sources: [] })), questions: ['Frage?'], conditions, strongestVersion: 'Version' });
+    const out = combineLenses({
+      value: lens(['Die Einsparung ist ohne Messung der Bearbeitungszeit nicht belegt.'], ['Bearbeitungszeit vorher messen']),
+      adoption: lens(['Der Betriebsrat ist nicht eingebunden.', 'Ohne Messung der Bearbeitungszeit fehlt die Einsparung als Argument.'], ['Bearbeitungszeit vorher messen', 'Betriebsrat einbinden']),
+      focus: lens(['Die Lösung will zu viel auf einmal.'], []),
+    });
+    expect(out.lenses.map((l) => l.lens)).toEqual(['value', 'adoption', 'focus']);
+    expect(out.sharedRisks).toHaveLength(1);
+    expect(out.sharedRisks[0].lenses).toEqual(['adoption', 'value']);
+    expect(out.conditions).toEqual(['Bearbeitungszeit vorher messen', 'Betriebsrat einbinden']);
+  });
+
+  it('computes the readiness of a brief from checks (after founder-skill "plan")', () => {
+    const bc = computeBusinessCase([
+      { id: 'b', label: 'Nutzen', unit: '€', kind: 'benefit', low: 10_000, base: 12_000, high: 14_000, sources: [1] },
+      { id: 'o', label: 'Einführung', unit: '€', kind: 'one_off_cost', low: 5_000, base: 6_000, high: 7_000, sources: [1] },
+    ], 3, 6);
+    const ok = readiness({ businessCase: { computed: bc }, riskLights: ['green', 'yellow'], experiments: { done: 1, running: 0 }, reviews: { unchecked: 2, required: false } });
+    expect(ok.ready).toBe(true);
+    expect(ok.checks.find((c) => c.id === 'reviews')!.ok).toBeNull();
+    const open = readiness({ businessCase: { computed: null }, riskLights: ['red'], experiments: { done: 0, running: 1 }, reviews: { unchecked: 1, required: true } });
+    expect(open.ready).toBe(false);
+    expect(open.checks.filter((c) => c.ok === false).map((c) => c.id)).toEqual(['business_case', 'red_risks', 'experiment', 'reviews']);
+    expect(open.checks.find((c) => c.id === 'payback')!.ok).toBeNull();
   });
 
   it('shows market size as ranges with the deviation of both methods', () => {
@@ -209,7 +262,7 @@ describe('builtin provider, jobs and the quality gate (R2-12, R2-18, R2-22)', ()
     expect((await api.triage.post(`/api/ideas/${id}/triage`, { lane: 'elaborate' })).status).toBe(200);
     await drainAiJobs();
     const kinds = (await api.triage.get(`/api/ideas/${id}/ai`)).body.results.map((r: { kind: string }) => r.kind);
-    for (const k of ['competition', 'positioning', 'market_size', 'business_case', 'risk_check', 'experiment', 'counterarguments', 'dossier_draft']) {
+    for (const k of ['competition', 'positioning', 'market_size', 'business_case', 'risk_check', 'experiment', 'counterarguments', 'review_lens', 'dossier_draft']) {
       expect(kinds).toContain(k);
     }
     // Patents are off by default until a patent database is connected (R2-24, R2-45); the log shows the skip.
@@ -224,6 +277,17 @@ describe('builtin provider, jobs and the quality gate (R2-12, R2-18, R2-22)', ()
     expect(risk.data.areas).toHaveLength(6);
     const market = res.find((r: { kind: string }) => r.kind === 'market_size');
     expect(market.computed).toBeNull();
+    // Positioning sentence and gap; the builtin provider leaves the gap open (null).
+    const pos = res.find((r: { kind: string }) => r.kind === 'positioning');
+    expect(pos.data.statement).toMatch(/^Für /);
+    expect(pos.data.gap.exists).toBeNull();
+    expect(res.find((r: { kind: string }) => r.kind === 'competition').data.complaints).toEqual([]);
+    // Three lenses, each its own call in the AI log; no vote and no score.
+    const lens = res.find((r: { kind: string }) => r.kind === 'review_lens');
+    expect(lens.data.lenses).toHaveLength(3);
+    expect(JSON.stringify(lens.data)).not.toMatch(/score|vote/i);
+    const log = (await api.admin.get(`/api/admin/ai/log?ideaId=${id}`)).body as { agent: string }[];
+    expect(log.filter((l) => l.agent === 'review_lens')).toHaveLength(3);
 
     // Refresh marks changes against the last version (R2-32).
     expect((await api.triage.post(`/api/ideas/${id}/ai/run`, { kind: 'full' })).status).toBe(202);
@@ -237,6 +301,11 @@ describe('builtin provider, jobs and the quality gate (R2-12, R2-18, R2-22)', ()
     const recalc = await api.triage.put(`/api/ai/results/${bc.id}/business-case`, { horizonYears: 5, assumptions });
     expect(recalc.status).toBe(200);
     expect(recalc.body.computed.horizonYears).toBe(5);
+    // Ramp-up from the workspace setting (default 6 months) unless set on the business case.
+    expect(recalc.body.computed.rampMonths).toBe(6);
+    const flat = await api.triage.put(`/api/ai/results/${bc.id}/business-case`, { horizonYears: 5, rampMonths: 0, assumptions });
+    expect(flat.body.computed.rampMonths).toBe(0);
+    expect(flat.body.computed.keyDriver).not.toBeNull();
     const csv = await app.inject({ method: 'GET', url: `/api/ai/results/${recalc.body.id}/business-case.csv`, headers: { cookie: await login(app, 'ki', users.triage.email) } });
     expect(csv.body).toContain('Pessimistisch');
   });
@@ -268,7 +337,27 @@ describe('builtin provider, jobs and the quality gate (R2-12, R2-18, R2-22)', ()
     expect(exp.status).toBe(200);
     const list = (await api.triage.get(`/api/ideas/${id}/experiments`)).body;
     const items = list.items ?? list;
-    expect(items.some((x: { id: string }) => x.id === exp.body.id)).toBe(true);
+    const adopted = items.find((x: { id: string }) => x.id === exp.body.id);
+    // The experiment measures an assumption of the business case (after founder-skill "launch").
+    expect(adopted.assumptionId).toBe('benefit');
+    expect(adopted.assumptionLabel).toBeTruthy();
+
+    // Without a measured value nothing can be taken over.
+    expect((await api.triage.post(`/api/ideas/${id}/experiments/${exp.body.id}/apply`)).status).toBe(400);
+    expect((await api.triage.post(`/api/ideas/${id}/experiments/${exp.body.id}/result`, { outcome: 'confirmed', result: 'Zwei Wochen gemessen, Ersparnis bestätigt.', measured: 4200 })).status).toBe(200);
+    expect((await api.max.post(`/api/ideas/${id}/experiments/${exp.body.id}/apply`)).status).toBe(403);
+    const applied = await api.triage.post(`/api/ideas/${id}/experiments/${exp.body.id}/apply`);
+    expect(applied.status).toBe(200);
+    expect(applied.body).toMatchObject({ assumption: 'benefit', value: 4200 });
+    const bc = (await api.triage.get(`/api/ideas/${id}/ai`)).body.results.find((r: { kind: string }) => r.kind === 'business_case');
+    const benefit = bc.data.assumptions.find((a: { id: string }) => a.id === 'benefit');
+    expect(benefit).toMatchObject({ low: 4200, base: 4200, high: 4200, measured: { experimentId: exp.body.id, value: 4200 } });
+    expect(bc.edited).toBe(true);
+    // Only once.
+    expect((await api.triage.post(`/api/ideas/${id}/experiments/${exp.body.id}/apply`)).status).toBe(409);
+    const after = (await api.triage.get(`/api/ideas/${id}/experiments`)).body.items.find((x: { id: string }) => x.id === exp.body.id);
+    expect(after.measuredValue).toBe(4200);
+    expect(after.appliedAt).toBeTruthy();
   });
 
   it('lets triage correct single statements; submitters cannot (R2-15)', async () => {

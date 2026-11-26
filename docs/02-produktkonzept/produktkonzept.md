@@ -148,12 +148,12 @@ Vor Demo und Pilot werden drei Vertrauensrisiken behoben (Leitentscheidung 4 in 
 | Ausarbeiten | Wettbewerbsanalyse | Produktideen: Wettbewerber; interne Ideen: fertige Lösungen, Open Source, Vorgehen anderer Unternehmen | Entwurf | 2 |
 | Ausarbeiten | Marktanalyse | Produktideen: TAM, SAM, SOM (Soll, nur Produktideen); interne Ideen: Lösungsmarkt, Benchmarks, interner Hebel | Entwurf | 2 |
 | Ausarbeiten | Patentrecherche | Patente und Stand der Technik; standardmäßig aus, bis eine Patentdatenbank (EPO OPS, Lens.org) angebunden ist | Entwurf | 2 |
-| Ausarbeiten | Business-Case-Copilot | Nutzen, Kosten, Amortisation, Sensitivität | Entwurf | 2 |
+| Ausarbeiten | Business-Case-Copilot | Nutzen, Kosten, Amortisation mit Hochlauf, Sensitivität und Stellschraube; Messwerte aus Experimenten ersetzen Schätzungen | Entwurf | 2 |
 | Ausarbeiten | Risiko- und Compliance-Check | Datenschutz, KI-Verordnung, Sicherheit, Recht, Arbeitnehmererfindung | Vorschlag | 2 |
-| Ausarbeiten | Experiment-Designer | Hypothese, kleinster Test, Erfolgskriterien | Entwurf | 2 |
+| Ausarbeiten | Experiment-Designer | Hypothese, kleinster Test, Erfolgskriterien, gemessene Annahme des Business Case | Entwurf | 2 |
 | Ausarbeiten | Aufwandsschätzung | Schätzt aus ähnlichen, bereits umgesetzten Ideen | Entwurf | 4 |
-| Gate 2 | Vorlage und Advocatus Diaboli | Einseitige Vorlage, Pre-Mortem, stärkste Gegenargumente, Trefferband früherer Prognosen | Entwurf | 2 (Trefferband 4) |
-| Umsetzung | Umsetzungspaket | Projektsteckbrief und User Stories für Jira, ServiceNow oder Azure DevOps | Entwurf | 3 |
+| Gate 2 | Vorlage, Advocatus Diaboli und Prüfblick | Einseitige Vorlage mit berechneter Vorlagereife, Pre-Mortem, stärkste Gegenargumente, drei Linsen (Nutzen, Einführung, Fokus) ohne Urteil, Trefferband früherer Prognosen | Entwurf | 2 (Trefferband 4) |
+| Umsetzung | Umsetzungspaket | Projektsteckbrief mit Einführungshürden und Betrieb, User Stories für Jira, ServiceNow oder Azure DevOps | Entwurf | 3 |
 | Umsetzung | Wirkungs-Monitor | Holt Kennzahlen aus angebundenen Systemen, vergleicht vorher und nachher | Entwurf | 4 |
 | Lernen | Kalibrierung | Vergleicht Prognosen mit dem Ist und verbessert Schätzungen | Automatisch, protokolliert | 4 |
 | Steuerung | Frag dein Portfolio | Beantwortet Fragen in Alltagssprache zu allen Ideen | Antwort | 3 |
@@ -169,14 +169,14 @@ Gestrichen: Portfolio-Simulator und Konsistenz-Check (R4-09, R4-10). Beide haben
 2. Er erstellt einen vollständigen Steckbrief-Entwurf:
    1. Problem und Ursache
    2. Lösung und Varianten
-   3. Wettbewerb und bestehende Lösungen
-   4. Marktpotenzial oder interner Hebel
-   5. Business Case mit Spannen und Sensitivität
+   3. Wettbewerb, bestehende Lösungen, heutiger Umweg und Kritik an Lösungen
+   4. Marktpotenzial oder interner Hebel, Positionierungssatz und Lücke
+   5. Business Case mit Spannen, Hochlauf, Sensitivität und Stellschraube
    6. Aufwand, Risiken und Compliance-Hinweise
    7. Vorschlag für ein Experiment und offene Fragen
 3. Jede Aussage ist markiert: belegt (mit Quelle und Abrufdatum), Annahme oder Schätzung (mit Konfidenz).
 4. Pate und Ideengeberin prüfen, korrigieren, setzen den Prüfstatus je Baustein und beantworten die offenen Fragen. Ändern sie eine Annahme, rechnet die KI Business Case und Marktpotenzial neu.
-5. Der Advocatus Diaboli sucht die stärksten Gegenargumente, dann entsteht die einseitige Vorlage für Gate 2.
+5. Der Advocatus Diaboli sucht die stärksten Gegenargumente, drei Linsen (Nutzen, Einführung, Fokus) prüfen die Idee getrennt, ohne Abstimmung oder Punktzahl. Ein Experiment kann eine Schätzung durch einen Messwert ersetzen. Dann entsteht die einseitige Vorlage für Gate 2 mit einer berechneten Vorlagereife.
 
 Ziel ist, die Ausarbeitung von bis zu 6 Wochen auf 1–2 Wochen zu verkürzen. Das ist eine Hypothese. Der Pilot misst sie mit den Durchlaufzeit-Kennzahlen (R2-41) gegen den Ausgangswert.
 

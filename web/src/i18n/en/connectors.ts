@@ -119,4 +119,6 @@ export const connectors: Record<string, string> = {
   'connectors.pkg.h.risks': 'Risks',
   'connectors.pkg.h.milestones': 'Milestones',
   'connectors.pkg.h.openQuestions': 'Open questions',
+  'connectors.pkg.h.rollout': 'Rollout hurdles and counter-measures',
+  'connectors.pkg.h.operation': 'Operation and responsibility',
 };

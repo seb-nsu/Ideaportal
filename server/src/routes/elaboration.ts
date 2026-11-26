@@ -7,6 +7,7 @@ import { m } from '../i18n/index.js';
 import {
   addMeetingItem,
   confirmImpactReview,
+  applyExperimentToBusinessCase,
   createExperiment,
   createMeeting,
   decideInMeeting,
@@ -237,6 +238,15 @@ export async function elaborationRoutes(app: FastifyInstance): Promise<void> {
       const p = z.object({ id: z.uuid(), experimentId: z.uuid() }).parse(req.params);
       await recordExperimentResult(ctx, await loadIdea(ctx, p.id, true), p.experimentId, experimentResultInput.parse(req.body));
       return { ok: true };
+    }),
+  );
+
+  // Measured value of a finished experiment into the business case, by click (after founder-skill "launch").
+  app.post(
+    '/api/ideas/:id/experiments/:experimentId/apply',
+    tenantHandler(async (ctx, req) => {
+      const p = z.object({ id: z.uuid(), experimentId: z.uuid() }).parse(req.params);
+      return applyExperimentToBusinessCase(ctx, await loadIdea(ctx, p.id, true), p.experimentId);
     }),
   );
 

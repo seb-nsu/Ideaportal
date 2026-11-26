@@ -25,6 +25,7 @@ export const AGENTS = [
   'dossier_draft',
   'gate2_brief',
   'counterarguments',
+  'review_lens',
   'challenge_suggestions',
   'success_story',
   'portfolio_query',
@@ -100,6 +101,9 @@ export const DEFAULT_EVALS = {
 // "unchecked model". serverSide false switches the fallback off.
 export const DEFAULT_FALLBACK = { serverSide: true };
 
+// Ramp-up of the benefit in the business case: full benefit after 6 months, running costs from month 1.
+export const DEFAULT_BUSINESS_CASE = { rampMonths: 6 };
+
 const agentConfig = z.object({
   enabled: z.boolean(),
   model: modelRef.optional(),
@@ -143,6 +147,8 @@ export const aiSettingsSchema = z.object({
   ideaTypes: z.object({ internal: ideaTypeConfig, product: ideaTypeConfig }).default(DEFAULT_IDEA_TYPES),
   // Review status per building block (R2-44): all blocks "geprüft" or "korrigiert" before Gate 2.
   review: z.object({ requireBeforeGate2: z.boolean() }).default({ requireBeforeGate2: false }),
+  // Business case (R2-28): months until an idea reaches its full benefit; the benefit grows evenly until then.
+  businessCase: z.object({ rampMonths: z.number().int().min(0).max(24) }).default(DEFAULT_BUSINESS_CASE),
   sourceCheck: z
     .object({
       enabled: z.boolean(),
@@ -208,6 +214,7 @@ export const AGENT_DEFAULTS: Record<AgentName, { slot: ModelSlot; minScore: numb
   dossier_draft: { slot: 'deep', minScore: 0.8, story: 'R2-31' },
   gate2_brief: { slot: 'deep', minScore: 0.8, story: 'R2-33' },
   counterarguments: { slot: 'deep', minScore: 0.8, story: 'R2-34' },
+  review_lens: { slot: 'deep', minScore: 0.8, story: 'R2-34' },
   challenge_suggestions: { slot: 'deep', minScore: 0.8, story: 'R2-36' },
   success_story: { slot: 'fast', minScore: 0.8, story: 'R2-37' },
   // Released without the test set: the answer is a filter checked by code (R3-23) or a translation shown next to the original (R3-30).
@@ -251,6 +258,7 @@ export const defaultAiSettings: AiSettings = {
   releaseOverrides: {},
   ideaTypes: DEFAULT_IDEA_TYPES,
   review: { requireBeforeGate2: false },
+  businessCase: DEFAULT_BUSINESS_CASE,
   sourceCheck: DEFAULT_SOURCE_CHECK,
   qualityAlarm: DEFAULT_QUALITY_ALARM,
   evals: DEFAULT_EVALS,

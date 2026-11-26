@@ -39,7 +39,9 @@ export async function getPackage(ctx: Ctx, idea: IdeaRow) {
   );
   const p = r.rows[0];
   if (!p) return null;
-  return { brief: p.brief, stories: p.stories, source: p.source, aiActionId: p.ai_action_id, version: p.version, updatedAt: p.updated_at, updatedBy: p.updated_name };
+  // Packages from before rollout/operation existed get empty fields.
+  const brief = Object.fromEntries(BRIEF_FIELDS.map((f) => [f, p.brief[f] ?? ''])) as ImplementationPackage['brief'];
+  return { brief, stories: p.stories, source: p.source, aiActionId: p.ai_action_id, version: p.version, updatedAt: p.updated_at, updatedBy: p.updated_name };
 }
 
 export async function generatePackage(ctx: Ctx, idea: IdeaRow, input: z.infer<typeof generateInput>) {
@@ -93,7 +95,7 @@ export function packageMarkdown(l: Locale, idea: IdeaRow, pkg: ImplementationPac
   if (pkg.source === 'ai') out.push(`> ${L(l, 'conn.pkg.aiNotice')}`, '');
   out.push(`## ${L(l, 'conn.pkg.briefHeading')}`, '');
   for (const f of BRIEF_FIELDS) {
-    out.push(`### ${L(l, `conn.pkg.h.${f}` as MessageKey)}`, '', pkg.brief[f].trim() || '–', '');
+    out.push(`### ${L(l, `conn.pkg.h.${f}` as MessageKey)}`, '', (pkg.brief[f] ?? '').trim() || '–', '');
   }
   out.push(`## ${L(l, 'conn.pkg.storiesHeading')}`, '');
   pkg.stories.forEach((s, i) => {

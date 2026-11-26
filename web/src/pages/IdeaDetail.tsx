@@ -76,7 +76,7 @@ interface Detail {
 const EVENT_LABEL = labelMap('ideaDetail.event', [
   'created', 'submitted', 'question', 'answer', 'gate1', 'gate2', 'implementation_accepted', 'implementation_progress',
   'completed', 'closed', 'escalation', 'resubmission', 'authorship_confirmed', 'merged', 'merged_in', 'coauthor_added',
-  'imported', 'mentor_assigned', 'timebox_exceeded', 'meeting_scheduled', 'experiment_started', 'experiment_result',
+  'imported', 'mentor_assigned', 'timebox_exceeded', 'meeting_scheduled', 'experiment_started', 'experiment_result', 'experiment_applied',
   'impact_review', 'success_story', 'benefit_confirmed', 'handover', 'external_status', 'implementation_package',
 ] as const);
 

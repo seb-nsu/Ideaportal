@@ -49,6 +49,7 @@ export const RUBRICS: Partial<Record<AgentName, Criterion[]>> = {
   dossier_draft: [{ id: 'complete', text: 'Der Steckbrief ist vollständig oder markiert Lücken mit konkreten Fragen.' }],
   gate2_brief: [{ id: 'decisionReady', text: 'Ein Gremium kann auf einer Seite verstehen, worüber es entscheidet; Empfehlung ohne Entscheidung.' }],
   counterarguments: [{ id: 'strong', text: 'Die Gegenargumente sind die stärksten sachlichen Einwände, keine Strohmänner.' }],
+  review_lens: [{ id: 'lens', text: 'Bleibt in der vorgegebenen Linse, nennt die gefährlichsten Risiken zuerst und gibt weder Empfehlung noch Punktzahl.' }],
   success_story: [{ id: 'honest', text: 'Erzählt die Wirkung ohne Übertreibung und nennt nur belegte Zahlen.' }],
   challenge_suggestions: [{ id: 'strategic', text: 'Die Challenges zahlen erkennbar auf die Ziele im Dokument ein.' }],
   implementation_package: [{ id: 'actionable', text: 'Stories sind umsetzbar und haben prüfbare Akzeptanzkriterien.' }],

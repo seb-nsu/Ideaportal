@@ -55,7 +55,7 @@ interface AiView {
 
 export const KIND_LABEL = labelMap('aiPanel.kind', [
   'short_analysis', 'triage_suggestion', 'competition', 'patents', 'positioning', 'market_size', 'internal_market',
-  'business_case', 'risk_check', 'experiment', 'counterarguments', 'dossier_draft', 'discussion_summary',
+  'business_case', 'risk_check', 'experiment', 'counterarguments', 'review_lens', 'dossier_draft', 'discussion_summary',
 ] as const);
 const ORDER = Object.keys(KIND_LABEL);
 export const CLAIM_LABEL = labelMap('aiPanel.claim', ['fact', 'assumption', 'estimate'] as const);
@@ -154,6 +154,38 @@ function Sections({ result, canWork, onCorrect }: { result: AiResult; canWork: b
   );
 }
 
+const LENS = labelMap('aiPanel.lens', ['value', 'adoption', 'focus'] as const);
+
+function List({ title, items }: { title: string; items?: string[] }) {
+  if (!items?.length) return null;
+  return <><h4>{title}</h4><ul>{items.map((x) => <li key={x}>{x}</li>)}</ul></>;
+}
+
+/** Review through three lenses: shared risks first, then each lens, then the merged conditions. No vote, no score. */
+export function LensReview({ data }: { data: any }) {
+  return (
+    <div className="stack">
+      <p className="small muted">{t('aiPanel.lens.intro')}</p>
+      {data.sharedRisks?.length > 0 && (
+        <>
+          <h4>{t('aiPanel.lens.shared')}</h4>
+          <ul>{data.sharedRisks.map((r: any) => <li key={r.text}>{r.text} <span className="small muted">({r.lenses.map((l: keyof typeof LENS) => LENS[l]).join(', ')})</span></li>)}</ul>
+        </>
+      )}
+      {(data.lenses ?? []).map((x: any) => (
+        <details key={x.lens}>
+          <summary>{LENS[x.lens as keyof typeof LENS]}</summary>
+          <List title={t('aiPanel.lens.strengths')} items={x.strengths} />
+          <List title={t('aiPanel.lens.risks')} items={x.risks?.map((r: any) => r.text)} />
+          <List title={t('aiPanel.lens.questions')} items={x.questions} />
+          {x.strongestVersion && <><h4>{t('aiPanel.lens.strongest')}</h4><p>{x.strongestVersion}</p></>}
+        </details>
+      ))}
+      <List title={t('aiPanel.lens.conditions')} items={data.conditions} />
+    </div>
+  );
+}
+
 function CorrectionDialog({ resultId, claim, onClose, onDone }: { resultId: string; claim: Claim; onClose: () => void; onDone: () => void }) {
   const [action, setAction] = useState<'correct' | 'discard'>('correct');
   const [text, setText] = useState(claim.text);
@@ -194,6 +226,7 @@ function BusinessCase({ result, canWork, onSaved }: { result: AiResult; canWork:
   const [items, setItems] = useState<any[]>(result.data.assumptions);
   const [years, setYears] = useState<number>(result.data.horizonYears ?? 3);
   const [computed, setComputed] = useState<any>(result.computed);
+  const [ramp, setRamp] = useState<number | null>(result.data.rampMonths ?? result.computed?.rampMonths ?? null);
   const { busy, error, run } = useAction();
   useEffect(() => {
     setItems(result.data.assumptions);
@@ -201,9 +234,10 @@ function BusinessCase({ result, canWork, onSaved }: { result: AiResult; canWork:
   }, [result]);
   const KIND = labelMap('aiPanel.bc.kind', ['benefit', 'one_off_cost', 'running_cost'] as const);
   const SC = labelMap('aiPanel.bc.scenario', ['pessimistic', 'base', 'optimistic'] as const);
+  const FLAG = labelMap('aiPanel.bc.flag', ['running_exceeds_benefit', 'payback_beyond_horizon', 'key_driver_unsourced'] as const);
   const set = (i: number, k: 'low' | 'base' | 'high', v: string) => setItems((xs) => xs.map((x, n) => (n === i ? { ...x, [k]: v === '' ? null : Number(v) } : x)));
   const recalc = async () => {
-    const res = await run(() => api.put<{ computed: any }>(`/api/ai/results/${result.id}/business-case`, { horizonYears: years, assumptions: items }));
+    const res = await run(() => api.put<{ computed: any }>(`/api/ai/results/${result.id}/business-case`, { horizonYears: years, assumptions: items, ...(ramp == null ? {} : { rampMonths: ramp }) }));
     if (res) {
       setComputed(res.computed);
       onSaved();
@@ -219,7 +253,7 @@ function BusinessCase({ result, canWork, onSaved }: { result: AiResult; canWork:
           <tbody>
             {items.map((a, i) => (
               <tr key={a.id}>
-                <th scope="row">{a.label} <span className="badge accent">{t('aiPanel.claim.estimate')}</span></th>
+                <th scope="row">{a.label} {a.measured ? <span className="badge green">{t('aiPanel.bc.measured')}</span> : <span className="badge accent">{t('aiPanel.claim.estimate')}</span>}</th>
                 <td>{KIND[a.kind]}</td>
                 {(['low', 'base', 'high'] as const).map((k) => (
                   <td key={k}>
@@ -235,11 +269,16 @@ function BusinessCase({ result, canWork, onSaved }: { result: AiResult; canWork:
         <div className="row">
           <label htmlFor={`years-${result.id}`}>{t('aiPanel.bc.years')}</label>
           <input id={`years-${result.id}`} type="number" min={1} max={10} value={years} onChange={(e) => setYears(Number(e.target.value))} style={{ width: 80 }} />
+          <label htmlFor={`ramp-${result.id}`}>{t('aiPanel.bc.ramp')}</label>
+          <input id={`ramp-${result.id}`} type="number" min={0} max={24} value={ramp ?? ''} placeholder={t('aiPanel.bc.rampDefault')} onChange={(e) => setRamp(e.target.value === '' ? null : Number(e.target.value))} style={{ width: 80 }} />
           <button type="button" onClick={recalc} disabled={busy}>{t('aiPanel.bc.recalc')}</button>
         </div>
       )}
       {!computed && <p className="alert info">{t('aiPanel.bc.noScenarios')}</p>}
       {computed && <>
+      {computed.keyDriver && <p><strong>{t('aiPanel.bc.keyDriver', { label: computed.keyDriver.label })}</strong> {t('aiPanel.bc.keyDriverEffect', { minus: eur(computed.keyDriver.minus20), plus: eur(computed.keyDriver.plus20) })}</p>}
+      {(computed.flags ?? []).map((f: keyof typeof FLAG) => <p key={f} className="alert warn">{FLAG[f]}</p>)}
+      <p className="small muted">{t('aiPanel.bc.rampNote', { n: computed.rampMonths ?? 0 })}</p>
       <div className="table-wrap" tabIndex={0}>
         <table>
           <caption className="sr-only">{t('aiPanel.bc.scenariosCaption')}</caption>
@@ -364,6 +403,19 @@ function ResultBody({ result, canWork, ideaId, onCorrect, reload }: { result: Ai
               </table>
             </div>
           )}
+          {d.complaints?.length > 0 && (
+            <>
+              <h4>{t('aiPanel.comp.complaints')}</h4>
+              <ul>
+                {d.complaints.map((c: any) => (
+                  <li key={c.theme}>
+                    {c.theme} {c.sources.map((s: number) => <a key={s} href={`#src-${s}`}>[{s}]</a>)}{' '}
+                    {c.sources.length < 3 && <span className="badge yellow">{t('aiPanel.comp.thin')}</span>}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </>
       );
     case 'patents':
@@ -377,7 +429,14 @@ function ResultBody({ result, canWork, ideaId, onCorrect, reload }: { result: Ai
         </>
       );
     case 'positioning':
-      return <><PositioningMap result={result} canWork={canWork} onSaved={reload} /><ToClarify items={d.toClarify} /></>;
+      return (
+        <>
+          {d.statement && <p><strong>{t('aiPanel.pos.statement')}</strong> {d.statement}</p>}
+          <PositioningMap result={result} canWork={canWork} onSaved={reload} />
+          {d.gap && <p className={d.gap.exists === false ? 'alert warn' : undefined}><strong>{d.gap.exists === false ? t('aiPanel.pos.noGap') : d.gap.exists ? t('aiPanel.pos.gap') : t('aiPanel.pos.gapOpen')}</strong> {d.gap.text}</p>}
+          <ToClarify items={d.toClarify} />
+        </>
+      );
     case 'market_size': {
       const c = result.computed;
       if (!c) return <><ToClarify items={d.toClarify} /><Sections result={result} canWork={canWork} onCorrect={onCorrect} /></>;
@@ -453,6 +512,8 @@ function ResultBody({ result, canWork, ideaId, onCorrect, reload }: { result: Ai
           {d.earlyWarnings?.length > 0 && <><h4>{t('aiPanel.counter.earlyWarnings')}</h4><ul>{d.earlyWarnings.map((w: string) => <li key={w}>{w}</li>)}</ul></>}
         </>
       );
+    case 'review_lens':
+      return <LensReview data={d} />;
     case 'dossier_draft': {
       const SEC = labelMap('aiPanel.dossier.sec', ['benefit', 'effort', 'risks', 'affected', 'path', 'analyses'] as const);
       return (

@@ -62,6 +62,7 @@ export const aieval = {
   'aieval.agent.dossier_draft': 'Idea profile draft',
   'aieval.agent.gate2_brief': 'Gate 2 brief',
   'aieval.agent.counterarguments': 'Counterarguments and pre-mortem',
+  'aieval.agent.review_lens': 'Review through three lenses',
   'aieval.agent.challenge_suggestions': 'Challenge suggestions',
   'aieval.agent.success_story': 'Success story',
   'aieval.agent.portfolio_query': 'Questions about the portfolio',

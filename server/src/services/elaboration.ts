@@ -7,6 +7,8 @@ import { isWorkday, workdaysBetween } from '../lib/workdays.js';
 import { audit } from './audit.js';
 import { notifyAuthors, notifyRoles, notifyUser } from './notify.js';
 import { emitIdeaEvent } from './webhooks.js';
+import type { Assumption } from '../ai/calc.js';
+import { saveResult, type StoredContent } from '../ai/pipeline.js';
 import {
   VISIBLE_SQL,
   actsFor,
@@ -465,11 +467,15 @@ export const experimentInput = z.object({
   startsOn: z.iso.date(),
   endsOn: z.iso.date(),
   aiResultId: z.uuid().optional(),
+  // Business case assumption the experiment measures (after founder-skill "launch").
+  assumptionId: z.string().regex(/^[a-z0-9_]{1,40}$/).optional(),
 });
 
 export const experimentResultInput = z.object({
   outcome: z.enum(['confirmed', 'refuted', 'inconclusive']),
   result: z.string().trim().min(10).max(3000),
+  // Measured value of the linked assumption, in its unit; people take it over with a click.
+  measured: z.number().finite().nullable().optional(),
 });
 
 
@@ -486,15 +492,15 @@ export async function canManageExperiments(ctx: Ctx, idea: IdeaRow): Promise<boo
 export async function createExperiment(
   ctx: Ctx,
   idea: IdeaRow,
-  input: { hypothesis: string; smallestTest: string; metric: string; successCriteria: string; startsOn: string; endsOn: string; aiResultId?: string },
+  input: { hypothesis: string; smallestTest: string; metric: string; successCriteria: string; startsOn: string; endsOn: string; aiResultId?: string; assumptionId?: string | null },
 ): Promise<{ id: string }> {
   if (!(await canManageExperiments(ctx, idea))) throw forbidden(m('elaboration.experimentManagers'));
   if (input.endsOn < input.startsOn) throw badRequest(m('elaboration.endBeforeStart'));
   const r = await ctx.db.query<{ id: string }>(
-    `INSERT INTO experiments (tenant_id, idea_id, hypothesis, smallest_test, metric, success_criteria, starts_on, ends_on, ai_result_id, created_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+    `INSERT INTO experiments (tenant_id, idea_id, hypothesis, smallest_test, metric, success_criteria, starts_on, ends_on, ai_result_id, created_by, assumption_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
     [ctx.tenantId, idea.id, input.hypothesis, input.smallestTest, input.metric, input.successCriteria, input.startsOn, input.endsOn,
-     input.aiResultId ?? null, ctx.user!.id],
+     input.aiResultId ?? null, ctx.user!.id, input.assumptionId ?? null],
   );
   await addEvent(ctx, idea, 'experiment_started', m('elaboration.event.experimentStarted', { date: input.endsOn, hypothesis: input.hypothesis }));
   await audit(ctx, 'experiment.create', 'idea', idea.id, null, { ...input, id: r.rows[0].id });
@@ -505,11 +511,18 @@ export async function listExperiments(ctx: Ctx, idea: IdeaRow) {
   const r = await ctx.db.query(
     `SELECT e.id, e.hypothesis, e.smallest_test AS "smallestTest", e.metric, e.success_criteria AS "successCriteria",
             e.starts_on AS "startsOn", e.ends_on AS "endsOn", e.status, e.outcome, e.result, e.ai_result_id AS "aiResultId",
-            e.finished_at AS "finishedAt", u.display_name AS "createdBy"
+            e.finished_at AS "finishedAt", u.display_name AS "createdBy",
+            e.assumption_id AS "assumptionId", e.measured_value::float AS "measuredValue", e.applied_at AS "appliedAt"
        FROM experiments e LEFT JOIN users u ON u.id = e.created_by WHERE e.idea_id = $1 ORDER BY e.created_at DESC`,
     [idea.id],
   );
-  return { items: r.rows, can: { manage: await canManageExperiments(ctx, idea) } };
+  // Name of the linked business case assumption, from the current version.
+  const bc = (await ctx.db.query<{ a: Assumption[] | null }>(
+    `SELECT content->'data'->'assumptions' AS a FROM ai_results WHERE idea_id = $1 AND kind = 'business_case' AND subject IS NULL ORDER BY version DESC LIMIT 1`,
+    [idea.id],
+  )).rows[0]?.a ?? [];
+  const items = r.rows.map((x: { assumptionId: string | null }) => ({ ...x, assumptionLabel: bc.find((a) => a.id === x.assumptionId)?.label ?? null }));
+  return { items, can: { manage: await canManageExperiments(ctx, idea) } };
 }
 
 /** Records the result. For a piloting idea, the result leads back to Gate 2. */
@@ -521,8 +534,8 @@ export async function recordExperimentResult(ctx: Ctx, idea: IdeaRow, experiment
   );
   if (!r.rows[0]) throw notFound(m('elaboration.experimentNotFound'));
   if (r.rows[0].status !== 'running') throw conflict(m('elaboration.experimentDone'));
-  await ctx.db.query("UPDATE experiments SET status = 'done', outcome = $2, result = $3, finished_at = now() WHERE id = $1", [
-    experimentId, input.outcome, input.result,
+  await ctx.db.query("UPDATE experiments SET status = 'done', outcome = $2, result = $3, measured_value = $4, finished_at = now() WHERE id = $1", [
+    experimentId, input.outcome, input.result, input.measured ?? null,
   ]);
   const text = cat([m(`elaboration.experiment.result.${input.outcome}`, { hypothesis: r.rows[0].hypothesis }), '\n', input.result]);
   await audit(ctx, 'experiment.result', 'idea', idea.id, null, { experimentId, ...input });
@@ -538,6 +551,39 @@ export async function recordExperimentResult(ctx: Ctx, idea: IdeaRow, experiment
   } else {
     await addEvent(ctx, idea, 'experiment_result', text);
   }
+}
+
+/**
+ * Takes the measured value of a finished experiment into the business case (after founder-skill
+ * "launch": a real test beats an estimate). Only by a person's click; the assumption keeps a
+ * reference to the experiment, and the range widens if the measurement lies outside it.
+ */
+export async function applyExperimentToBusinessCase(ctx: Ctx, idea: IdeaRow, experimentId: string): Promise<{ resultId: string; version: number; assumption: string; value: number }> {
+  if (!(await canManageExperiments(ctx, idea))) throw forbidden();
+  const e = (await ctx.db.query<{ status: string; assumption_id: string | null; measured_value: number | null; applied_at: Date | null }>(
+    'SELECT status, assumption_id, measured_value::float AS measured_value, applied_at FROM experiments WHERE id = $1 AND idea_id = $2 FOR UPDATE',
+    [experimentId, idea.id],
+  )).rows[0];
+  if (!e) throw notFound(m('elaboration.experimentNotFound'));
+  if (e.status !== 'done' || e.assumption_id == null || e.measured_value == null) throw badRequest(m('elaboration.experiment.noMeasurement'));
+  if (e.applied_at) throw conflict(m('elaboration.experiment.alreadyApplied'));
+  const bc = (await ctx.db.query<{ content: StoredContent }>(
+    `SELECT content FROM ai_results WHERE idea_id = $1 AND kind = 'business_case' AND subject IS NULL ORDER BY version DESC LIMIT 1`,
+    [idea.id],
+  )).rows[0];
+  const assumptions = (bc?.content.data.assumptions ?? []) as Assumption[];
+  const target = assumptions.find((a) => a.id === e.assumption_id);
+  if (!bc || !target) throw badRequest(m('elaboration.experiment.noAssumption'));
+  const v = e.measured_value;
+  const updated = assumptions.map((a) => (a.id === target.id
+    ? { ...a, low: Math.min(a.low ?? v, v), base: v, high: Math.max(a.high ?? v, v), measured: { experimentId, value: v, at: ctx.today } }
+    : a));
+  const content: StoredContent = { ...bc.content, data: { ...bc.content.data, assumptions: updated }, meta: { ...bc.content.meta, edited: true, generatedAt: new Date().toISOString() } };
+  const saved = await saveResult(ctx, idea.id, 'business_case', content, null);
+  await ctx.db.query('UPDATE experiments SET applied_at = now() WHERE id = $1', [experimentId]);
+  await addEvent(ctx, idea, 'experiment_applied', m('elaboration.event.experimentApplied', { label: target.label, value: fmt.number('de', v) }));
+  await audit(ctx, 'experiment.apply', 'idea', idea.id, { base: target.base }, { experimentId, assumption: target.id, base: v });
+  return { resultId: saved.id, version: saved.version, assumption: target.id, value: v };
 }
 
 // ---------------------------------------------------------------- impact review at Gate 3 (R2-07)

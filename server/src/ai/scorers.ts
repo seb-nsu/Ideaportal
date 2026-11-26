@@ -463,6 +463,14 @@ const S: Partial<Record<AgentName, (o: O, shown: O, c: ScoreContext) => Check[]>
         1,
         'Preis auf Anfrage nicht markiert',
       ),
+      part(
+        'complaints.sourced',
+        ((o.complaints ?? []) as { sources: number[] }[]).length
+          ? ((o.complaints ?? []) as { sources: number[] }[]).filter((x) => x.sources.length && x.sources.every((id) => known.has(id))).length / (o.complaints as unknown[]).length
+          : 1,
+        2,
+        'Kritikpunkt ohne Quelle',
+      ),
     ];
   },
   patents: (o, _s, c) => {
@@ -496,6 +504,8 @@ const S: Partial<Record<AgentName, (o: O, shown: O, c: ScoreContext) => Check[]>
       ok('axes', nonTrivial(o.axisX?.label, 2) && nonTrivial(o.axisY?.label, 2) && o.axisX.label !== o.axisY.label, 1, 'Achsen fehlen oder gleich'),
       ok('reasoning', nonTrivial(o.reasoning, 30), 1, 'Begründung fehlt'),
       ok('toClarify', (o.toClarify ?? []).length >= 1, 1, 'keine offenen Fragen'),
+      ok('statement', /^\s*(für|for)\b/i.test(String(o.statement ?? '')) && nonTrivial(o.statement, 40), 1, 'Positionierungssatz fehlt'),
+      ok('gap', nonTrivial(o.gap?.text, 20), 1, 'Aussage zur Lücke fehlt'),
     ];
   },
   market_size: (o, _s, c) => {
@@ -634,6 +644,18 @@ const S: Partial<Record<AgentName, (o: O, shown: O, c: ScoreContext) => Check[]>
       ok('earlyWarnings', (o.earlyWarnings ?? []).length >= 2, 1, 'weniger als zwei Frühwarnzeichen'),
     ];
   },
+  review_lens: (o) => {
+    const risks = (o.risks ?? []) as { text: string }[];
+    const all = [...risks.map((r) => r.text), ...((o.strengths ?? []) as string[]), ...((o.conditions ?? []) as string[]), String(o.strongestVersion ?? '')].join(' ');
+    return [
+      ok('risks.count', risks.length >= 1 && risks.length <= 3, 2, 'nicht 1 bis 3 Risiken'),
+      part('risks.nonTrivial', risks.length ? risks.filter((r) => nonTrivial(r.text, 25)).length / risks.length : 0, 1, 'Risiko zu knapp'),
+      // The AI never decides: no vote, no score, no recommendation to implement or reject.
+      ok('noVerdict', !/\b\d{1,2}\s*(\/|von|of|out of)\s*10\b|(empfehle|empfehlen|recommend)\w*\s+(die\s+|to\s+)?(umsetzung|ablehnung|implement|reject)/i.test(all), 3, 'gibt Urteil oder Punktzahl'),
+      ok('questions', (o.questions ?? []).length >= 1, 1, 'keine Fragen'),
+      ok('strongestVersion', nonTrivial(o.strongestVersion, 40), 1, 'stärkste Version fehlt'),
+    ];
+  },
   success_story: (o, shown, c) => {
     const body = String(shown.body ?? '');
     const allowed = new Set(numbersIn(`${c.idea.title} ${c.idea.problem} ${c.idea.solution} ${c.idea.benefit} ${c.context ?? ''}`));
@@ -658,6 +680,8 @@ const S: Partial<Record<AgentName, (o: O, shown: O, c: ScoreContext) => Check[]>
         'Story ohne Akzeptanzkriterium',
       ),
       ok('brief.goal', nonTrivial(o.brief?.goal, 15), 1, 'Ziel fehlt'),
+      ok('brief.rollout', nonTrivial(o.brief?.rollout, 30), 1, 'Einführungshürden fehlen'),
+      ok('brief.operation', nonTrivial(o.brief?.operation, 20), 1, 'Betrieb und Verantwortung fehlen'),
     ];
   },
   challenge_suggestions: (o, _s, c) => {

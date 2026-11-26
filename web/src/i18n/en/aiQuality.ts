@@ -39,7 +39,7 @@ export const aiQuality: Record<string, string> = {
   'aiQuality.block.business_case': 'Business case',
   'aiQuality.block.risk_check': 'Risk and compliance check',
   'aiQuality.block.experiment': 'Experiment proposal',
-  'aiQuality.block.counterarguments': 'Counterarguments',
+  'aiQuality.block.counterarguments': 'Counterarguments and lenses',
   'aiQuality.block.dossier_draft': 'Dossier draft',
   'aiQuality.reviewSetting': 'All AI building blocks must be reviewed before the Gate 2 decision',
   'aiQuality.sourceCheck.title': 'Source check',

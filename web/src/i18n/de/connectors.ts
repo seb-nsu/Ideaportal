@@ -118,4 +118,6 @@ export const connectors = {
   'connectors.pkg.h.risks': 'Risiken',
   'connectors.pkg.h.milestones': 'Meilensteine',
   'connectors.pkg.h.openQuestions': 'Offene Fragen',
+  'connectors.pkg.h.rollout': 'Einführungshürden und Gegenmaßnahmen',
+  'connectors.pkg.h.operation': 'Betrieb und Verantwortung',
 } as const;

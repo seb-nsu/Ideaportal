@@ -3,10 +3,13 @@ import { buildCtx, type Ctx, type SessionUser } from '../lib/context.js';
 import {
   businessCaseCall,
   competitionCall,
+  combineLenses,
   counterCall,
   dossierCall,
   experimentCall,
   internalMarketCall,
+  LENSES,
+  lensCall,
   marketSizeCall,
   patentsCall,
   positioningCall,
@@ -15,6 +18,9 @@ import {
   triageCall,
   type AnalysisBundle,
   type IdeaFacts,
+  type Lens,
+  type LensReview,
+  type LensSummary,
   type ShortAnalysis,
 } from './agents.js';
 import { cleanText, diffClaims, findInjections, normalizeSections, setContactContext, setInjectionContext, type ModelSection, type Section, type Source } from './content.js';
@@ -184,9 +190,55 @@ function queriesFor(ctx: Ctx, idea: IdeaFacts, purpose: 'short' | 'full'): Resea
     ...base,
     { query: `${kw} ${product ? 'Alternative Produkt Preis' : 'Open Source'}`, origin: 'web' },
     { query: `${kw} ${product ? 'Marktgröße Studie' : 'Unternehmen Erfahrungen Best Practice'}`, origin: 'web' },
+    // Public criticism of existing solutions for the "complaints" of the competition analysis.
+    { query: `${kw} ${product ? 'Bewertung Kritik Nachteile' : 'Software Bewertung Kritik'}`, origin: 'web' },
     // No patent query when the patents block is off for this idea type (R2-45).
     ...(blockEnabled(ctx.settings.ai, idea.ideaType, 'patents') ? [{ query: kw, origin: 'patent' as const }] : []),
   ];
+}
+
+/**
+ * Review through three lenses (after founder-skill "board"): one call per lens so the views stay
+ * independent, combined in code and stored as one result. A failing lens leaves the others;
+ * budget, configuration and release problems stop as everywhere else.
+ */
+export async function runLenses(ctx: Ctx, idea: IdeaFacts, bundle: AnalysisBundle, sources: Source[], text: string): Promise<LensSummary | null> {
+  const results: Partial<Record<Lens, LensReview>> = {};
+  const warnings: string[] = [];
+  let last: Omit<StoredContent, 'agent'> | null = null;
+  let actionId: string | null = null;
+  let costEur = 0;
+  let firstError: AiError | null = null;
+  for (const lens of LENSES) {
+    try {
+      const run = await runAgent(ctx, lensCall(idea, lens, bundle, sources));
+      const fin = finalize(run, sources, text);
+      results[lens] = fin.output;
+      warnings.push(...fin.warnings);
+      costEur += fin.meta.costEur;
+      last = fin;
+      actionId = run.actionId;
+    } catch (err) {
+      if (!(err instanceof AiError)) throw err;
+      if (['AI_BUDGET', 'AI_DISABLED', 'AI_CONFIDENTIAL', 'AI_CONFIG', 'AI_EVAL_PENDING'].includes(err.code ?? '')) throw err;
+      firstError ??= err;
+    }
+  }
+  if (!last) {
+    if (firstError) throw firstError;
+    return null;
+  }
+  const summary = combineLenses(results);
+  const content: StoredContent = {
+    agent: 'review_lens',
+    data: summary as unknown as Record<string, unknown>,
+    sections: [],
+    sources: storedSources(sources),
+    warnings: [...new Set(warnings)],
+    meta: { ...last.meta, costEur },
+  };
+  await tx(ctx, (c) => saveResult(c, idea.id, 'review_lens', content, actionId));
+  return summary;
 }
 
 const OPEN_STATUSES = ['submitted', 'in_question'];
@@ -241,16 +293,17 @@ export async function runFullAnalysis(ctx: Ctx, ideaId: string): Promise<{ done:
           else bundle.internalMarket = (await runAndSave(ctx, 'internal_market', internalMarketCall(idea, sources), text, null, pages)).output;
           break;
         case 'business_case':
-          bundle.businessCase = (await runAndSave(ctx, 'business_case', businessCaseCall(idea, { lever: bundle.internalMarket?.lever ?? null, market: bundle.marketSize ?? null }, sources), text, null, pages)).output;
+          bundle.businessCase = { ...(await runAndSave(ctx, 'business_case', businessCaseCall(idea, { lever: bundle.internalMarket?.lever ?? null, market: bundle.marketSize ?? null }, sources), text, null, pages)).output, rampMonths: ctx.settings.ai.businessCase.rampMonths };
           break;
         case 'risk_check':
           bundle.risks = (await runAndSave(ctx, 'risk_check', riskCall(idea), text)).output;
           break;
         case 'experiment':
-          bundle.experiment = (await runAndSave(ctx, 'experiment', experimentCall(idea, bundle.risks ?? null), text)).output;
+          bundle.experiment = (await runAndSave(ctx, 'experiment', experimentCall(idea, bundle.risks ?? null, bundle.businessCase?.assumptions ?? []), text)).output;
           break;
         case 'counterarguments':
           await runAndSave(ctx, 'counterarguments', counterCall(idea, bundle, sources), text, null, pages);
+          bundle.lenses = await runLenses(ctx, idea, bundle, sources, text);
           break;
         case 'dossier_draft':
           await runAndSave(ctx, 'dossier_draft', dossierCall(idea, bundle), text);
