@@ -2,12 +2,13 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { config } from '../config.js';
 import { boundaryCall, challengeSuggestionsCall, coachCall, gate2Call, imageCall, replyCall, successStoryCall, summaryCall, type AnalysisBundle, type CoachMessage, type DossierDraft, type ExperimentProposal } from '../ai/agents.js';
-import { businessCaseComplete, businessCaseCsv, computeBusinessCase, computeLever, computeMarketSize, type Assumption, type MarketInputs } from '../ai/calc.js';
+import { MAX_RAMP_MONTHS, type BusinessCase, businessCaseComplete, businessCaseCsv, computeBusinessCase, computeLever, computeMarketSize, type Assumption, type MarketInputs } from '../ai/calc.js';
 import { configHash, enqueueEval, latestRun, minScore, qualityInUse, releaseState } from '../ai/eval.js';
 import { agentName } from '../ai/evalReport.js';
 import { AiError, allProviders, logAction, redactedInput, resolveModel, runAgent, spent } from '../ai/gateway.js';
 import { enqueueAiJob } from '../ai/hooks.js';
 import type { Source } from '../ai/content.js';
+import { readiness } from '../ai/readiness.js';
 import { detachedCtx, finalize, ideaFacts, latestContent, saveResult, tx, type StoredContent } from '../ai/pipeline.js';
 import { createProvider, platformKey, ProviderError } from '../ai/providers.js';
 import { getSecret, secretNames, setSecret } from '../ai/secrets.js';
@@ -89,6 +90,9 @@ interface ResultRow {
   created_by: string | null;
 }
 
+/** Ramp-up of a business case: set on the result by people, otherwise the tenant default. */
+const rampOf = (c: Ctx, data: Record<string, unknown>) => (typeof data.rampMonths === 'number' ? data.rampMonths : c.settings.ai.businessCase.rampMonths);
+
 /** A result as the UI shows it: corrections applied and computed figures added. */
 async function present(c: Ctx, r: ResultRow) {
   const corr = await c.db.query<{ claim_id: string; action: string; corrected_text: string | null; reason: string; user_name: string | null; created_at: Date }>(
@@ -109,7 +113,7 @@ async function present(c: Ctx, r: ResultRow) {
   // Figures are only computed from complete inputs; open values stay "zu klären" (R2-40).
   let computed: unknown = null;
   const assumptions = data.assumptions as Assumption[] | undefined;
-  if (r.kind === 'business_case' && assumptions && businessCaseComplete(assumptions)) computed = computeBusinessCase(assumptions, Number(data.horizonYears) || 3);
+  if (r.kind === 'business_case' && assumptions && businessCaseComplete(assumptions)) computed = computeBusinessCase(assumptions, Number(data.horizonYears) || 3, rampOf(c, data));
   if (r.kind === 'market_size' && data.topDown && data.bottomUp) computed = computeMarketSize(data as unknown as MarketInputs);
   if (r.kind === 'internal_market' && data.lever) computed = computeLever(data.lever as Parameters<typeof computeLever>[0]);
   return {
@@ -205,7 +209,7 @@ function briefFigures(
   if (bc && base) {
     const assumptions = (bc.data.assumptions as Assumption[]) ?? [];
     const cited = [...new Set(assumptions.flatMap((a) => a.sources))].map((n) => bc.sources.find((s) => s.id === n)).filter((s): s is Source => !!s);
-    const allSourced = assumptions.every((a) => a.sources.length > 0);
+    const allSourced = assumptions.every((a) => a.sources.length > 0 || !!a.measured);
     const basis = allSourced ? 'source' : 'calculation';
     const note = t(allSourced ? 'ai.figure.computedSourced' : 'ai.figure.computedPartly');
     const conf = allSourced ? 'medium' : 'low';
@@ -349,6 +353,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
       const body = z
         .object({
           horizonYears: z.number().int().min(1).max(10),
+          rampMonths: z.number().int().min(0).max(MAX_RAMP_MONTHS).optional(),
           assumptions: z.array(z.object({ id: z.string().regex(/^[a-z0-9_]{1,40}$/), label: z.string().min(1).max(120), unit: z.string().max(40), kind: z.enum(['benefit', 'one_off_cost', 'running_cost']), low: z.number().nullable(), base: z.number().nullable(), high: z.number().nullable(), sources: z.array(z.number().int()).default([]) })).min(1).max(30),
         })
         .parse(req.body);
@@ -360,7 +365,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
       if (bad) throw badRequest(m('ai.rangeOrder', { label: bad.label }));
       const content: StoredContent = { ...r.content, data: { ...r.content.data, ...body }, meta: { ...r.content.meta, edited: true, generatedAt: new Date().toISOString() } };
       const saved = await saveResult(ctx, r.idea_id, 'business_case', content, null);
-      const computed = businessCaseComplete(body.assumptions) ? computeBusinessCase(body.assumptions, body.horizonYears) : null;
+      const computed = businessCaseComplete(body.assumptions) ? computeBusinessCase(body.assumptions, body.horizonYears, rampOf(ctx, content.data)) : null;
       return { id: saved.id, version: saved.version, computed };
     }),
   );
@@ -371,10 +376,10 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
       const r = await loadResult(ctx, idParam(req));
       if (r.kind !== 'business_case' || !r.idea_id) throw badRequest(m('ai.notBusinessCase'));
       await visibleIdea(ctx, r.idea_id);
-      const data = r.content.data as { assumptions: Assumption[]; horizonYears: number };
+      const data = r.content.data as { assumptions: Assumption[]; horizonYears: number; rampMonths?: number };
       if (!businessCaseComplete(data.assumptions)) throw badRequest(m('ai.openValues'));
       reply.header('content-type', 'text/csv; charset=utf-8').header('content-disposition', 'attachment; filename="business-case.csv"');
-      return '﻿' + businessCaseCsv(data.assumptions, computeBusinessCase(data.assumptions, data.horizonYears), ctx.locale);
+      return '﻿' + businessCaseCsv(data.assumptions, computeBusinessCase(data.assumptions, data.horizonYears, rampOf(ctx, data)), ctx.locale);
     }),
   );
 
@@ -570,6 +575,12 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
         const score = await ctx.db.query<{ avg: number | null; n: number }>(`SELECT avg(total)::float AS avg, count(*)::int AS n FROM scorecards WHERE idea_id = $1 AND context = 'gate2'`, [it.idea_id]);
         const base = (bc?.computed as ReturnType<typeof computeBusinessCase> | null)?.scenarios.find((s) => s.name === 'base');
         const counter = await latest('counterarguments');
+        const lenses = await latest('review_lens');
+        const reviews = await reviewStatus(ctx, it.idea_id);
+        const exp = await ctx.db.query<{ done: number; running: number }>(
+          `SELECT count(*) FILTER (WHERE status = 'done')::int AS done, count(*) FILTER (WHERE status = 'running')::int AS running FROM experiments WHERE idea_id = $1`,
+          [it.idea_id],
+        );
         const sources = new Map<string, { title: string; url: string }>();
         for (const r of [bc, risk, counter, await latest('competition'), await latest('short_analysis')]) for (const s of r?.sources ?? []) sources.set(s.url, { title: s.title, url: s.url });
         const presented = brief.rows[0] ? await present(ctx, brief.rows[0]) : null;
@@ -581,6 +592,7 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
           words: presented ? briefWords(presented) : 0,
           readingMinutes: presented ? Math.max(1, Math.ceil(briefWords(presented) / 200)) : 0,
           counterarguments: counter,
+          lenses,
           comparison: {
             score: score.rows[0].n ? Math.round(score.rows[0].avg! * 100) / 100 : null,
             raters: score.rows[0].n,
@@ -595,8 +607,15 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
           // Every key figure with where it comes from and how sure it is (R2-43).
           figures: briefFigures(ctx.locale, it, bc, score.rows[0]),
           // Review status per building block (R2-44).
-          reviews: await reviewStatus(ctx, it.idea_id),
+          reviews,
           reviewRequired: ctx.settings.ai.review.requireBeforeGate2,
+          // How well the brief is backed up, computed from checks (after founder-skill "plan").
+          readiness: readiness({
+            businessCase: bc ? { computed: bc.computed as BusinessCase | null } : null,
+            riskLights: (risk?.data.areas as { light: 'green' | 'yellow' | 'red' }[] | undefined)?.map((a) => a.light) ?? [],
+            experiments: exp.rows[0],
+            reviews: { unchecked: reviews.filter((r) => r.status === 'unchecked').length, required: ctx.settings.ai.review.requireBeforeGate2 },
+          }),
           sources: [...sources.values()].slice(0, 15),
         });
       }
@@ -675,11 +694,14 @@ export async function aiRoutes(app: FastifyInstance): Promise<void> {
       if (result.idea_id !== idea.id || result.kind !== 'experiment') throw badRequest(m('ai.notExperiment'));
       const x = result.content.data as unknown as ExperimentProposal;
       const weeks = Math.min(26, Math.max(1, Math.round(Number(x.durationWeeks) || 4)));
+      // Only an assumption that exists in the current business case is linked.
+      const bc = await latestContent<{ assumptions?: Assumption[] }>(ctx, idea.id, 'business_case');
+      const assumptionId = x.assumption && bc?.assumptions?.some((a) => a.id === x.assumption) ? x.assumption : null;
       const end = new Date(`${ctx.today}T00:00:00Z`);
       end.setUTCDate(end.getUTCDate() + weeks * 7);
       return createExperiment(ctx, idea, {
         hypothesis: x.hypothesis, smallestTest: x.smallestTest, metric: x.metric, successCriteria: x.successCriteria,
-        startsOn: ctx.today, endsOn: end.toISOString().slice(0, 10), aiResultId: resultId,
+        startsOn: ctx.today, endsOn: end.toISOString().slice(0, 10), aiResultId: resultId, assumptionId,
       });
     }),
   );

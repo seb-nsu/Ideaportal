@@ -21,6 +21,7 @@ export const ideaDetail = {
   'ideaDetail.event.meeting_scheduled': 'Für Gremiumssitzung vorgesehen',
   'ideaDetail.event.experiment_started': 'Experiment gestartet',
   'ideaDetail.event.experiment_result': 'Ergebnis des Experiments',
+  'ideaDetail.event.experiment_applied': 'Messwert in den Business Case übernommen',
   'ideaDetail.event.impact_review': 'Wirkungsreview bestätigt',
   'ideaDetail.event.success_story': 'Erfolgsgeschichte veröffentlicht',
   'ideaDetail.event.benefit_confirmed': 'Ist-Nutzen geprüft',

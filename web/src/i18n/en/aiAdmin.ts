@@ -159,6 +159,8 @@ export const aiAdmin: Record<string, string> = {
   'aiAdmin.auto.short': 'Short analysis and triage suggestion after every submission',
   'aiAdmin.auto.full': 'Full analysis and draft profile for the “Elaborate” lane',
   'aiAdmin.auto.tone': 'Tone of feedback',
+  'aiAdmin.auto.ramp': 'Ramp-up in the business case (months)',
+  'aiAdmin.auto.rampHint': 'How many months an idea needs to reach its full benefit. Until then the benefit rises evenly; running costs count from month 1. 0 means full benefit from month 1.',
   'aiAdmin.save': 'Save AI settings',
 
   'aiAdmin.quality.title': 'Quality',

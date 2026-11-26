@@ -39,7 +39,7 @@ export const aiQuality = {
   'aiQuality.block.business_case': 'Business Case',
   'aiQuality.block.risk_check': 'Risiko- und Compliance-Check',
   'aiQuality.block.experiment': 'Experiment-Vorschlag',
-  'aiQuality.block.counterarguments': 'Gegenargumente',
+  'aiQuality.block.counterarguments': 'Gegenargumente und Prüfblick',
   'aiQuality.block.dossier_draft': 'Steckbrief-Entwurf',
   'aiQuality.reviewSetting': 'Vor der Entscheidung an Gate 2 müssen alle KI-Bausteine geprüft sein',
   'aiQuality.sourceCheck.title': 'Quellenprüfung',

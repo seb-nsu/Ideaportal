@@ -63,6 +63,7 @@ export const aieval = {
   'aieval.agent.dossier_draft': 'Steckbrief-Entwurf',
   'aieval.agent.gate2_brief': 'Gate-2-Vorlage',
   'aieval.agent.counterarguments': 'Gegenargumente und Pre-Mortem',
+  'aieval.agent.review_lens': 'Prüfblick mit drei Linsen',
   'aieval.agent.challenge_suggestions': 'Challenge-Vorschläge',
   'aieval.agent.success_story': 'Erfolgsgeschichte',
   'aieval.agent.portfolio_query': 'Fragen an das Portfolio',

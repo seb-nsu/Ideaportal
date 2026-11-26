@@ -30,6 +30,7 @@ interface AiSettings {
   releaseOverrides: Record<string, { configHash: string; reason: string; by: string; at: string }>;
   ideaTypes: Record<IdeaType, { shortWebSearch: boolean; blocks: Partial<Record<Block, boolean>> }>;
   review: { requireBeforeGate2: boolean };
+  businessCase?: { rampMonths: number };
   sourceCheck: { enabled: boolean; maxPages: number; maxChars: number; timeoutSeconds: number };
   // Edited in the quality dashboard (R4-08); kept here so saving this form does not reset it.
   qualityAlarm?: unknown;
@@ -540,6 +541,7 @@ export function AiAdmin() {
         <label className="check"><input type="checkbox" checked={s.autoFullAnalysis} onChange={(e) => set({ autoFullAnalysis: e.target.checked })} /> {t('aiAdmin.auto.full')}</label>
         <Field id="tone" label={t('aiAdmin.auto.tone')}><textarea id="tone" rows={2} value={s.tone} onChange={(e) => set({ tone: e.target.value })} /></Field>
         <label className="check"><input type="checkbox" checked={s.review.requireBeforeGate2} onChange={(e) => set({ review: { requireBeforeGate2: e.target.checked } })} /> {t('aiQuality.reviewSetting')}</label>
+        <Field id="bc-ramp" label={t('aiAdmin.auto.ramp')} hint={t('aiAdmin.auto.rampHint')}><input id="bc-ramp" type="number" min={0} max={24} value={s.businessCase?.rampMonths ?? 6} onChange={(e) => set({ businessCase: { rampMonths: Number(e.target.value) } })} /></Field>
       </fieldset>
 
       <ErrorBox error={save.error} />

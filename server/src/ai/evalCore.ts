@@ -8,6 +8,8 @@ import {
   coachCall,
   competitionCall,
   counterCall,
+  LENSES,
+  lensCall,
   dossierCall,
   experimentCall,
   gate2Call,
@@ -178,6 +180,9 @@ async function boundaryCase(t: TestIdea, opts: EvalOptions): Promise<CaseResult>
   };
 }
 
+/** Spreads the three review lenses evenly over the test ideas. */
+const lensIndex = (id: string) => [...id].reduce((n, ch) => n + ch.charCodeAt(0), 0) % LENSES.length;
+
 export const SUITES: Partial<Record<AgentName, Suite>> = {
   boundary: { pool: all, sampled: false, custom: boundaryCase },
   short_analysis: { pool: all, sampled: false, build: (t) => ({ call: withLocale(t, shortAnalysisCall(factsOf(t), sourcesOf(t))) }) },
@@ -236,6 +241,8 @@ export const SUITES: Partial<Record<AgentName, Suite>> = {
     build: (t) => ({ call: withLocale(t, gate2Call(factsOf(t), { benefit: t.benefit }, {}, sourcesOf(t))), context: t.benefit }),
   },
   counterarguments: { pool: regular, sampled: true, build: (t) => ({ call: withLocale(t, counterCall(factsOf(t), {}, sourcesOf(t))) }) },
+  // The lenses take turns over the test ideas, so every lens is checked.
+  review_lens: { pool: regular, sampled: true, build: (t) => ({ call: withLocale(t, lensCall(factsOf(t), LENSES[lensIndex(t.id)], {}, sourcesOf(t))) }) },
   success_story: {
     pool: regular,
     sampled: true,

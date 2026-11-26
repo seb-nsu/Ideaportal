@@ -1029,7 +1029,9 @@
       "Produktideen: Wettbewerber und Ersatzprodukte",
       "interne Ideen: fertige Lösungen, Open Source und Vorgehen anderer Unternehmen",
       "Matrix mit Funktionen, Preisen, Stärken, Schwächen",
-      "jede Angabe mit Quelle"
+      "jede Angabe mit Quelle",
+      "heutiger Umweg bei internen Ideen",
+      "Kritik an bestehenden Lösungen aus öffentlichen Bewertungen, nur mit Quelle"
     ],
     "story_points": 8,
     "prioritaet": "Muss",
@@ -1060,7 +1062,9 @@
     "akzeptanzkriterien": [
       "Achsen editierbar",
       "Hinweis bei Preisen auf Anfrage",
-      "Empfehlung mit Begründung"
+      "Empfehlung mit Begründung",
+      "Positionierungssatz",
+      "Aussage zur Lücke, „keine Lücke“ ist ein gültiges Ergebnis"
     ],
     "story_points": 5,
     "prioritaet": "Muss",
@@ -1108,7 +1112,9 @@
     "akzeptanzkriterien": [
       "Drei Szenarien",
       "Neuberechnung bei geänderter Annahme",
-      "Export"
+      "Export",
+      "Hochlauf des Nutzens je Arbeitsbereich einstellbar",
+      "Stellschraube und Warnungen berechnet"
     ],
     "story_points": 8,
     "prioritaet": "Muss",
@@ -1137,7 +1143,8 @@
     "story": "Als Pate möchte ich einen Experiment-Vorschlag mit Hypothese und Erfolgskriterien, damit unsichere Ideen erst getestet werden.",
     "akzeptanzkriterien": [
       "Hypothese, kleinster Test, Messgröße, Dauer",
-      "Übernahme in R2-06 per Klick"
+      "Übernahme in R2-06 per Klick",
+      "verknüpfte Annahme im Business Case, Messwert ersetzt sie per Klick"
     ],
     "story_points": 3,
     "prioritaet": "Soll",
@@ -1194,7 +1201,8 @@
     "story": "Als Gremiumsmitglied möchte ich die stärksten Gegenargumente und ein Pre-Mortem sehen, damit wir nicht nur bestätigen.",
     "akzeptanzkriterien": [
       "3–5 Gegenargumente",
-      "Szenario „Warum ist es gescheitert?“"
+      "Szenario „Warum ist es gescheitert?“",
+      "Prüfblick mit drei Linsen (Nutzen, Einführung, Fokus) in getrennten Aufrufen, ohne Abstimmung und Punktzahl"
     ],
     "story_points": 3,
     "prioritaet": "Muss",
@@ -1384,6 +1392,7 @@
       "Quellenlink oder Annahme je Zahl",
       "Konfidenz je Zahl",
       "Lesezeit im Pilot gemessen, Ziel höchstens 10 Minuten",
+      "berechnete Vorlagereife (Business Case, Amortisation, rote Ampeln, Experiment, Prüfstatus)",
       "ergänzt R2-33"
     ],
     "story_points": 2,
@@ -1854,7 +1863,8 @@
     "story": "Als Owner möchte ich aus einer freigegebenen Idee ein Umsetzungspaket (Projektsteckbrief, User Stories) erzeugen, damit die Umsetzung schnell startet.",
     "akzeptanzkriterien": [
       "Entwurf editierbar",
-      "Export und Übergabe über die Konnektoren"
+      "Export und Übergabe über die Konnektoren",
+      "Einführungshürden mit Gegenmaßnahmen, Betrieb und Verantwortung"
     ],
     "story_points": 5,
     "prioritaet": "Soll",

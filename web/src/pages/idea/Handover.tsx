@@ -25,7 +25,7 @@ interface HandoverView {
   }[];
 }
 
-const BRIEF_FIELDS = ['goal', 'scope', 'outOfScope', 'benefit', 'effort', 'risks', 'milestones', 'openQuestions'] as const;
+const BRIEF_FIELDS = ['goal', 'scope', 'outOfScope', 'benefit', 'effort', 'risks', 'rollout', 'operation', 'milestones', 'openQuestions'] as const;
 type Brief = Record<(typeof BRIEF_FIELDS)[number], string>;
 interface Story {
   title: string;

@@ -20,6 +20,7 @@ export const aigw = {
   'aigw.agent.dossier_draft': 'Steckbrief-Entwurf',
   'aigw.agent.gate2_brief': 'Gate-2-Vorlage',
   'aigw.agent.counterarguments': 'Gegenargumente und Pre-Mortem',
+  'aigw.agent.review_lens': 'Prüfblick mit drei Linsen',
   'aigw.agent.challenge_suggestions': 'Challenge-Vorschläge',
   'aigw.agent.success_story': 'Erfolgsgeschichte',
   'aigw.agent.portfolio_query': 'Fragen an das Portfolio',

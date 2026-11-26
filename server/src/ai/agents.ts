@@ -478,6 +478,9 @@ export const competitionSchema = z.object({
       }),
     )
     .max(12),
+  // Recurring criticism of existing solutions from public reviews (themes, each with its sources);
+  // the code marks a theme with fewer than three sources as thin.
+  complaints: z.array(z.object({ theme: z.string().min(1).max(300), sources: z.array(z.number().int()) })).max(6),
 });
 export type Competition = z.infer<typeof competitionSchema>;
 
@@ -495,7 +498,8 @@ export function competitionCall(idea: IdeaFacts, sources: Source[]): AgentCall<C
     prompt: `Erstelle eine Wettbewerbs- und Lösungsanalyse. ${product
       ? 'Produktidee: Wer löst das Problem schon? Wettbewerber ("competitor") und Ersatzprodukte ("substitute").'
       : 'Interne Idee: Gibt es fertige Lösungen am Markt ("ready_solution"), Open Source ("open_source") oder das Vorgehen anderer Unternehmen ("other_company")?'}
-Matrix mit Funktionen, Preisen, Stärken und Schwächen. Jede Zeile braucht mindestens eine Quelle aus der Liste; ohne Quelle keine Zeile. Preis "auf Anfrage" setzt priceOnRequest=true. Abschnitte: "Überblick", "Lücken und Chancen".
+Matrix mit Funktionen, Preisen, Stärken und Schwächen. Jede Zeile braucht mindestens eine Quelle aus der Liste; ohne Quelle keine Zeile. Preis "auf Anfrage" setzt priceOnRequest=true. Abschnitte: "Überblick", ${product ? '' : '"Heutiger Umweg" (wie die Betroffenen das Problem heute ohne Lösung bewältigen, etwa mit Tabellen, Handarbeit oder Rückfragen; aus der Idee als Annahme, sonst mit Quelle), '}"Lücken und Chancen". Gibt es keine Lücke, schreibe das ausdrücklich; das ist ein gültiges Ergebnis.
+"complaints": wiederkehrende Kritik an den gefundenen Lösungen aus öffentlichen Bewertungen oder Erfahrungsberichten in der Quellenliste, als Themen mit allen Quellennummern, die sie stützen. Ohne Quelle kein Thema; finden sich keine, bleibt die Liste leer.
 
 ${ideaBlock(idea)}
 
@@ -505,8 +509,10 @@ ${sourceBlock(sources)}`,
       return {
         sections: [
           { heading: T(l, 'aiout.comp.h.overview'), claims: web.length ? researchClaims(sources, 'web', l, 6) : [claim(T(l, 'aiout.comp.noWeb'), 'assumption')] },
+          ...(product ? [] : [{ heading: T(l, 'aiout.comp.h.workaround'), claims: [claim(T(l, 'aiout.comp.workaround'), 'assumption')] }]),
           { heading: T(l, 'aiout.comp.h.gaps'), claims: [claim(T(l, 'aiout.comp.gaps'), 'assumption')] },
         ],
+        complaints: [],
         matrix: web.map((s) => ({
           name: s.title.slice(0, 120),
           kind: product ? ('competitor' as const) : ('ready_solution' as const),
@@ -565,6 +571,10 @@ export const positioningSchema = z.object({
   items: z.array(z.object({ name: z.string().min(1).max(120), x: z.number().min(0).max(10), y: z.number().min(0).max(10), isIdea: z.boolean(), priceOnRequest: z.boolean() })).max(15),
   recommendation: z.enum(['buy', 'build', 'change_process', 'combine']),
   reasoning: z.string().min(1).max(2000),
+  // One positioning sentence: for whom, which problem, which gap, unlike which alternative.
+  statement: z.string().min(1).max(500),
+  // The gap nobody fills well; exists=false is a valid result, null = still unclear.
+  gap: z.object({ exists: z.boolean().nullable(), text: z.string().min(1).max(800) }),
   sections,
   toClarify,
 });
@@ -580,6 +590,8 @@ export function positioningCall(idea: IdeaFacts, competition: Competition | null
     tools: [],
     schema: positioningSchema,
     prompt: `Erstelle eine Positionierungskarte (zwei Achsen, Werte 0-10) mit der Idee (isIdea=true) und den Lösungen aus der Wettbewerbsanalyse. Die Positionen sind Einschätzungen. Gib eine Empfehlung: "buy" (kaufen), "build" (selbst bauen), "change_process" (Prozess ändern) oder "combine", mit Begründung. Weise auf Preise "auf Anfrage" hin (priceOnRequest).
+"statement": ein Positionierungssatz nach dem Muster "Für <Betroffene>, die <Problem in ihren Worten>, ist <Idee> die <Art von Lösung>, die <Lücke>, anders als <nächste Alternative>." Nur mit Angaben aus Idee und Wettbewerbsanalyse.
+"gap": Was keine der Lösungen gut macht und die Idee könnte. Gibt es keine Lücke, setze exists=false und sage es klar; ist das noch nicht zu beurteilen, exists=null.
 
 ${ideaBlock(idea)}
 
@@ -596,6 +608,8 @@ ${fence('wettbewerb', JSON.stringify(competition?.matrix ?? []))}`,
         items: [{ name: T(l, 'aiout.pos.ourIdea'), x: 5, y: 5, isIdea: true, priceOnRequest: false }],
         recommendation: rows.length ? 'buy' : internal ? 'change_process' : 'build',
         reasoning: T(l, rows.length ? 'aiout.pos.buy' : internal ? 'aiout.pos.changeProcess' : 'aiout.pos.build'),
+        statement: T(l, 'aiout.pos.statement', { title: safe(idea.title).slice(0, 120) }),
+        gap: { exists: null, text: T(l, 'aiout.pos.gapOpen') },
         sections: [notice(l)],
         toClarify: [
           ...rows.slice(0, 5).map((r) => T(l, 'aiout.pos.where', { name: r.name })),
@@ -724,7 +738,8 @@ export function businessCaseCall(idea: IdeaFacts, context: { lever?: InternalMar
     sources,
     tools: [],
     schema: businessCaseSchema,
-    prompt: `Erstelle die Annahmen für einen Business Case in Euro: Nutzen pro Jahr ("benefit"), Einmalkosten ("one_off_cost") und laufende Kosten pro Jahr ("running_cost"), jeweils mit niedrigem, Basis- und hohem Wert. Das System rechnet drei Szenarien, Amortisation und Sensitivität. Betrachtungszeitraum 3 Jahre, wenn nichts dagegen spricht. Abschnitt "Begründung der Annahmen". Ist ein Wert nicht seriös schätzbar, setze low, base und high auf null und formuliere eine Leitfrage in "toClarify".
+    prompt: `Erstelle die Annahmen für einen Business Case in Euro: Nutzen pro Jahr ("benefit"), Einmalkosten ("one_off_cost") und laufende Kosten pro Jahr ("running_cost"), jeweils mit niedrigem, Basis- und hohem Wert. Das System rechnet drei Szenarien, Amortisation und Sensitivität; der Nutzen steigt dabei über einen Hochlauf an, den das Portal festlegt. Gib deshalb den vollen jährlichen Nutzen an. Betrachtungszeitraum 3 Jahre, wenn nichts dagegen spricht. Abschnitt "Begründung der Annahmen".
+Rangfolge der Quellen je Wert: 1. Zahlen aus der Idee oder internen Ideen, 2. öffentliche Preise oder Studien aus der Quellenliste (mit Nummer in "sources"), 3. eigene Schätzung mit Begründung (dann "sources" leer). Gib eine Schätzung nie als belegt aus. Ist ein Wert nicht seriös schätzbar, setze low, base und high auf null und formuliere eine Leitfrage in "toClarify".
 
 ${ideaBlock(idea)}
 
@@ -808,10 +823,13 @@ export const experimentSchema = z.object({
   metric: z.string().min(1).max(300),
   successCriteria: z.string().min(1).max(500),
   durationWeeks: z.number().int().min(1).max(26),
+  // Id of the business case assumption the experiment measures (null: none fits). People can
+  // replace that estimate with the measured value once the result is in.
+  assumption: z.string().max(40).nullable(),
 });
 export type ExperimentProposal = z.infer<typeof experimentSchema>;
 
-export function experimentCall(idea: IdeaFacts, risks: RiskCheck | null): AgentCall<ExperimentProposal> {
+export function experimentCall(idea: IdeaFacts, risks: RiskCheck | null, assumptions: Pick<Assumption, 'id' | 'label' | 'kind'>[] = []): AgentCall<ExperimentProposal> {
   return {
     agent: 'experiment',
     ideaId: idea.id,
@@ -825,7 +843,11 @@ export function experimentCall(idea: IdeaFacts, risks: RiskCheck | null): AgentC
 ${ideaBlock(idea)}
 
 Risiken:
-${fence('risiken', JSON.stringify(risks?.areas.filter((a) => a.light !== 'green') ?? []))}`,
+${fence('risiken', JSON.stringify(risks?.areas.filter((a) => a.light !== 'green') ?? []))}
+
+Annahmen des Business Case (id, Bezeichnung, Art):
+${fence('annahmen', JSON.stringify(assumptions.map((a) => ({ id: a.id, label: a.label, kind: a.kind }))))}
+Misst das Experiment eine dieser Annahmen direkt, setze "assumption" auf ihre id, sonst null. Wähle möglichst die Annahme, deren Schätzung am unsichersten ist.`,
     builtin: (l) => {
       const i = cleanIdea(idea);
       return {
@@ -834,6 +856,8 @@ ${fence('risiken', JSON.stringify(risks?.areas.filter((a) => a.light !== 'green'
         metric: keywords(i.benefit, 3).length ? T(l, 'aiout.exp.metric', { words: keywords(i.benefit, 3).join(', ') }) : T(l, 'aiout.exp.metricDefault'),
         successCriteria: T(l, 'aiout.exp.success'),
         durationWeeks: 4,
+        // The benefit is the usual big uncertainty; without a business case nothing is linked.
+        assumption: assumptions.find((a) => a.kind === 'benefit')?.id ?? null,
       };
     },
   };
@@ -853,9 +877,11 @@ export interface AnalysisBundle {
   short?: ShortAnalysis | null;
   competition?: Competition | null;
   positioning?: Positioning | null;
-  businessCase?: BusinessCaseOut | null;
+  /** rampMonths: the ramp-up the system computes with (tenant setting), so drafts show the same figures. */
+  businessCase?: (BusinessCaseOut & { rampMonths?: number }) | null;
   risks?: RiskCheck | null;
   experiment?: ExperimentProposal | null;
+  lenses?: LensSummary | null;
   internalMarket?: InternalMarket | null;
   marketSize?: MarketSizeOut | null;
 }
@@ -869,7 +895,7 @@ export function dossierCall(idea: IdeaFacts, bundle: AnalysisBundle): AgentCall<
     maxTokens: 8000,
     tools: [],
     schema: dossierSchema,
-    prompt: `Erstelle einen Entwurf des Ideen-Steckbriefs aus allen Bausteinen. "summary" ist die Zusammenfassung für die erste Seite (höchstens 250 Wörter). Fülle in "parts" die Abschnitte benefit (Nutzen), effort (Aufwand), risks (Risiken), affected (Betroffene), path (Umsetzungsweg), analyses (Analysen, kurz mit Verweis auf die Bausteine). Fehlt etwas, setze status "open" und formuliere offene Fragen. Schätze Aufwand in Personentagen und Euro und Plan-Nutzen in Euro pro Jahr als Spanne, wenn es die Bausteine hergeben, sonst null.
+    prompt: `Erstelle einen Entwurf des Ideen-Steckbriefs aus allen Bausteinen. "summary" ist die Zusammenfassung für die erste Seite (höchstens 250 Wörter). Fülle in "parts" die Abschnitte benefit (Nutzen), effort (Aufwand), risks (Risiken), affected (Betroffene), path (Umsetzungsweg), analyses (Analysen, kurz mit Verweis auf die Bausteine). Fehlt etwas, setze status "open" und formuliere offene Fragen. Die Bedingungen aus dem Prüfblick ("lenses.conditions") übernimmst du als offene Fragen in den passenden Abschnitt, die Risiken, die mehrere Linsen nennen ("lenses.sharedRisks"), zuerst unter "risks". Schätze Aufwand in Personentagen und Euro und Plan-Nutzen in Euro pro Jahr als Spanne, wenn es die Bausteine hergeben, sonst null.
 
 ${ideaBlock(idea)}
 
@@ -877,13 +903,13 @@ Bausteine:
 ${fence('bausteine', JSON.stringify(bundle).slice(0, 60_000))}`,
     builtin: (l) => {
       const i = cleanIdea(idea);
-      const bc = bundle.businessCase && businessCaseComplete(bundle.businessCase.assumptions) ? computeBusinessCase(bundle.businessCase.assumptions, bundle.businessCase.horizonYears) : null;
+      const bc = bundle.businessCase && businessCaseComplete(bundle.businessCase.assumptions) ? computeBusinessCase(bundle.businessCase.assumptions, bundle.businessCase.horizonYears, bundle.businessCase.rampMonths ?? 0) : null;
       const base = bc?.scenarios.find((s) => s.name === 'base');
       const yellow = bundle.risks?.areas.filter((a) => a.light !== 'green') ?? [];
       const parts: DossierDraft['parts'] = [
         { section: 'benefit', content: `${i.benefit}${base ? `\n\n${T(l, 'aiout.dossier.bc', { benefit: base.annualBenefit, payback: base.paybackMonths ?? '–' })}` : ''}`, status: /\d/.test(i.benefit) ? 'filled' : 'open', openQuestions: /\d/.test(i.benefit) ? [] : [T(l, 'aiout.dossier.benefitQ')] },
         { section: 'effort', content: base ? T(l, 'aiout.dossier.effort', { oneOff: base.oneOffCost, running: base.annualRunningCost }) : '', status: base ? 'filled' : 'open', openQuestions: base ? [T(l, 'aiout.dossier.effortAlign')] : [T(l, 'aiout.dossier.effortQ'), ...(bundle.businessCase?.toClarify ?? []).slice(1, 3)] },
-        { section: 'risks', content: yellow.length ? yellow.map((a) => `${riskLabel(l, a.area).label}: ${a.finding}`).join('\n') : T(l, 'aiout.dossier.noRisks'), status: 'filled', openQuestions: yellow.map((a) => T(l, 'aiout.dossier.reviewBy', { office: a.office })) },
+        { section: 'risks', content: yellow.length ? yellow.map((a) => `${riskLabel(l, a.area).label}: ${a.finding}`).join('\n') : T(l, 'aiout.dossier.noRisks'), status: 'filled', openQuestions: [...yellow.map((a) => T(l, 'aiout.dossier.reviewBy', { office: a.office })), ...(bundle.lenses?.conditions ?? []).map(safe)].slice(0, 8) },
         { section: 'affected', content: '', status: 'open', openQuestions: [T(l, 'aiout.dossier.affectedQ')] },
         { section: 'path', content: bundle.experiment ? T(l, 'aiout.dossier.path', { hypothesis: bundle.experiment.hypothesis }) : '', status: bundle.experiment ? 'filled' : 'open', openQuestions: bundle.experiment ? [] : [T(l, 'aiout.dossier.pathQ')] },
         { section: 'analyses', content: T(l, 'aiout.dossier.analyses'), status: 'filled', openQuestions: [] },
@@ -973,6 +999,115 @@ ${sourceBlock(sources)}`,
       };
     },
   };
+}
+
+// ---------------------------------------------------------------- review lenses (R2-34, after founder-skill "board")
+
+// Three separate views on an idea before Gate 2. Each lens runs as its own call so that the
+// views do not merge into one opinion; the code combines them. No vote and no score: the AI
+// never decides (guard rail 5) and the scorecard of the sponsors stays with people.
+export const LENSES = ['value', 'adoption', 'focus'] as const;
+export type Lens = (typeof LENSES)[number];
+
+export const lensSchema = z.object({
+  strengths: z.array(z.string().min(1).max(300)).max(4),
+  risks: z.array(z.object({ text: z.string().min(1).max(500), sources: z.array(z.number().int()) })).min(1).max(3),
+  questions: z.array(z.string().min(1).max(300)).max(4),
+  conditions: z.array(z.string().min(1).max(300)).max(5),
+  strongestVersion: z.string().min(1).max(1000),
+});
+export type LensReview = z.infer<typeof lensSchema>;
+
+const LENS_TASK: Record<Lens, (product: boolean) => string> = {
+  value: () => `Nutzen-Linse. Prüfe die Idee nur auf ihren Nutzen für die Betroffenen, an vier Größen:
+1. Wirkung: Wie groß ist die Verbesserung für wen?
+2. Beleg: Wie wahrscheinlich tritt sie ein, und was belegt das schon (Quelle, Messung, Experiment)?
+3. Zeit: Wie schnell spüren die Betroffenen die Wirkung?
+4. Aufwand: Wie viel Umstellung, Lernen oder Zusatzarbeit verlangt die Idee von ihnen?
+Die meisten Ideen scheitern an fehlendem Beleg oder zu viel Aufwand für die Betroffenen.`,
+  adoption: (product) => `Einführungs-Linse. Prüfe die Idee nur darauf, ob sie bei den Betroffenen ankommt:
+1. Wie erreicht die Lösung die Menschen, die sie nutzen sollen, und wer muss mitmachen (Fachbereich, IT, Datenschutz, Mitbestimmung)?
+2. Warum jetzt? Was hat sich geändert, dass die Idee heute besser passt als vor einem Jahr?
+3. Was spricht dafür, dass sie in zwei Jahren noch genutzt wird?${product ? '\n4. Was hindert einen Wettbewerber, die Idee in sechs Monaten nachzubauen?' : ''}
+Eine gute Lösung, die niemand nutzt, bringt keinen Nutzen.`,
+  focus: () => `Fokus-Linse. Prüfe die Idee nur auf Klarheit und Einfachheit:
+1. Was ist das Eine, das die Idee sehr gut machen muss? Lässt es sich in einem Satz sagen?
+2. Was lässt sich streichen, ohne dass dieses Eine leidet?
+3. Wo wird zwischen Teams, Rollen oder Systemen übergeben, und was geht an diesen Stellen schief?
+4. Wie sehen die ersten fünf Minuten für eine betroffene Person aus?`,
+};
+
+export function lensCall(idea: IdeaFacts, lens: Lens, bundle: AnalysisBundle, sources: Source[]): AgentCall<LensReview> {
+  return {
+    agent: 'review_lens',
+    ideaId: idea.id,
+    sensitive: idea.confidential,
+    system: SYSTEM,
+    maxTokens: 2500,
+    sources,
+    tools: [],
+    schema: lensSchema,
+    prompt: `${LENS_TASK[lens](idea.ideaType === 'product')}
+
+Antworte nur aus dieser Linse. Gib keine Empfehlung, ob die Idee umgesetzt werden soll, und keine Punktzahl; das entscheiden Menschen.
+- "strengths": was aus dieser Linse stark ist (höchstens 4).
+- "risks": die drei gefährlichsten Risiken aus dieser Linse, das gefährlichste zuerst, mit Quellennummern, falls belegt.
+- "questions": Fragen, die Ideengeber:in und Mentor:in vor dem Gremium klären sollten.
+- "conditions": prüfbare Bedingungen, unter denen die Idee aus dieser Linse tragfähig wäre.
+- "strongestVersion": ein Absatz, wie die stärkste Version dieser Idee aus dieser Linse aussähe. Sie darf von der Einreichung abweichen; sag dann klar, worin.
+Bewerte keine Personen. Erfinde keine Zahlen.
+
+${ideaBlock(idea)}
+
+Bausteine:
+${fence('bausteine', JSON.stringify(bundle).slice(0, 30_000))}
+
+${sourceBlock(sources)}`,
+    builtin: (l) => {
+      const i = cleanIdea(idea);
+      const k = `aiout.lens.${lens}` as const;
+      return {
+        strengths: [lines(i.benefit, 1)].filter(Boolean).slice(0, 1),
+        risks: [T(l, `${k}.risk1` as MessageKey), T(l, `${k}.risk2` as MessageKey)].map((text) => ({ text, sources: [] })),
+        questions: [T(l, `${k}.q1` as MessageKey), T(l, `${k}.q2` as MessageKey)],
+        conditions: [],
+        strongestVersion: T(l, 'aiout.lens.strongest'),
+      };
+    },
+  };
+}
+
+export interface LensSummary {
+  lenses: ({ lens: Lens } & LensReview)[];
+  /** Risks that at least two lenses raise (by shared key words), first. */
+  sharedRisks: { text: string; lenses: Lens[] }[];
+  /** All conditions, deduplicated: a checklist for the elaboration. */
+  conditions: string[];
+}
+
+const riskWords = (t: string) => new Set(keywords(t, 12).map((w) => w.toLowerCase()));
+
+/** Combines the lenses in code: risks named by more than one lens first, conditions merged. */
+export function combineLenses(results: Partial<Record<Lens, LensReview>>): LensSummary {
+  const lenses = LENSES.filter((l) => results[l]).map((l) => ({ lens: l, ...results[l]! }));
+  const shared: LensSummary['sharedRisks'] = [];
+  for (const a of lenses) {
+    for (const r of a.risks) {
+      const words = riskWords(r.text);
+      const others = lenses.filter((b) => b.lens !== a.lens && b.risks.some((x) => [...riskWords(x.text)].filter((w) => words.has(w)).length >= 2)).map((b) => b.lens);
+      if (!others.length) continue;
+      const group = [a.lens, ...others].sort() as Lens[];
+      if (!shared.some((s) => s.lenses.join() === group.join() && [...riskWords(s.text)].filter((w) => words.has(w)).length >= 2)) shared.push({ text: r.text, lenses: group });
+    }
+  }
+  const seen = new Set<string>();
+  const conditions = lenses.flatMap((x) => x.conditions).filter((c) => {
+    const key = c.toLowerCase().replace(/\W+/g, ' ').trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return { lenses, sharedRisks: shared.slice(0, 5), conditions };
 }
 
 export const counterSchema = z.object({

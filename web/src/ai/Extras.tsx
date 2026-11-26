@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { ErrorBox, Field, readBase64, useAction, useLoad } from '../components';
-import { AiLabel, CLAIM_CLASS, CLAIM_LABEL, CONF, KIND_LABEL, REVIEW, REVIEW_CLASS, type AiResult, type ReviewStatus } from './AiPanel';
+import { AiLabel, LensReview, CLAIM_CLASS, CLAIM_LABEL, CONF, KIND_LABEL, REVIEW, REVIEW_CLASS, type AiResult, type ReviewStatus } from './AiPanel';
 import { formatDate, formatNumber, labelMap, t, tn } from '../i18n';
 
 // AI help outside the idea page: Gate 2 brief per meeting (R2-33, R2-34), challenge
@@ -14,6 +14,8 @@ interface BriefItem {
   title: string;
   brief: AiResult | null;
   counterarguments: AiResult | null;
+  lenses?: AiResult | null;
+  readiness?: { ready: boolean; checks: { id: ReadinessId; ok: boolean | null; vars: Record<string, number> }[] };
   sources: { title: string; url: string }[];
   words: number;
   readingMinutes: number;
@@ -156,6 +158,26 @@ function Points({ title, items }: { title: string; items: string[] | undefined }
   );
 }
 
+type ReadinessId = 'business_case' | 'payback' | 'red_risks' | 'experiment' | 'reviews';
+const READY_OK = labelMap('aiExtras.ready.ok', ['business_case', 'payback', 'red_risks', 'experiment', 'reviews'] as const);
+const READY_OPEN = labelMap('aiExtras.ready.open', ['business_case', 'payback', 'red_risks', 'experiment', 'reviews'] as const);
+
+/** Computed checklist: how well the brief is backed up. Not a verdict on the idea. */
+function Readiness({ r }: { r: NonNullable<BriefItem['readiness']> }) {
+  const fill = (text: string, vars: Record<string, number>) => text.replace(/\{(\w+)\}/g, (_, k: string) => formatNumber(vars[k] ?? 0));
+  return (
+    <div className={r.ready ? 'alert info' : 'alert warn'}>
+      <strong>{r.ready ? t('aiExtras.ready.ready') : t('aiExtras.ready.notReady')}</strong>
+      <ul>
+        {r.checks.filter((c) => c.ok !== null).map((c) => (
+          <li key={c.id}>{c.ok ? '✓' : '○'} {fill(c.ok ? READY_OK[c.id] : READY_OPEN[c.id], c.vars)}</li>
+        ))}
+      </ul>
+      <p className="small muted">{t('aiExtras.ready.note')}</p>
+    </div>
+  );
+}
+
 /** One page per idea for the committee, plus counterarguments; the committee decides. */
 export function MeetingBrief({ meetingId, canCreate }: { meetingId: string; canCreate: boolean }) {
   const { data, reload } = useLoad<BriefItem[]>(`/api/meetings/${meetingId}/ai/brief`);
@@ -198,6 +220,7 @@ export function MeetingBrief({ meetingId, canCreate }: { meetingId: string; canC
             <h3><Link to={`/ideen/${d.ideaId}/steckbrief/analysen`}>#{d.number} {d.title}</Link></h3>
             {d.brief && <><AiLabel meta={d.brief.meta} /> <span className="small muted">{tn('aiExtras.brief.reading', d.readingMinutes, { words: d.words })}</span></>}
             {d.brief && <BriefSections brief={d.brief} />}
+            {d.readiness && <Readiness r={d.readiness} />}
             <Figures items={d.figures} />
             <Reviews items={d.reviews ?? []} required={d.reviewRequired} />
             <div className="grid grid-3">
@@ -211,6 +234,12 @@ export function MeetingBrief({ meetingId, canCreate }: { meetingId: string; canC
                 <Points title={t('aiExtras.brief.counterarguments')} items={c.counterarguments?.map((x) => x.text)} />
                 {c.premortem && <><h4>{t('aiExtras.brief.premortem')}</h4><p>{c.premortem}</p></>}
                 <Points title={t('aiExtras.brief.earlyWarnings')} items={c.earlyWarnings} />
+              </details>
+            )}
+            {d.lenses && (
+              <details>
+                <summary>{t('aiExtras.brief.lensSummary')}</summary>
+                <LensReview data={d.lenses.data} />
               </details>
             )}
             {d.sources.length > 0 && (

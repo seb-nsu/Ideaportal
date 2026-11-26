@@ -2,6 +2,8 @@
 
 ## Unveröffentlicht
 
+Methoden aus founder-skill (26.11.2026): Business Case mit Hochlauf, Stellschraube und berechneten Warnungen; Wettbewerb mit heutigem Umweg und Kritik aus Bewertungen, Positionierungssatz und „keine Lücke“ als Ergebnis; neuer Agent `review_lens` (Prüfblick mit drei Linsen, ohne Abstimmung und Punktzahl); Messwert eines Experiments ersetzt per Klick die Annahme im Business Case (Migration 035); berechnete Vorlagereife in der Gremium-Vorlage; Umsetzungspaket mit Einführungshürden sowie Betrieb und Verantwortung. Stand in `docs/release-2/umsetzungsstand.md`.
+
 Vorbereitung auf ein öffentliches Repository (10.11.2026): ursprünglicher Entwurf (`docs/00-ausgangslage/`), alter Review vor Version 2 (`docs/04-review/`) und die veralteten PDF-Exporte der Konzepte entfernt; Namen in den Dokumenten durch die Rolle „Product Owner“ ersetzt; Aussagen zum Verhältnis mit dem Arbeitgeber neutral formuliert; Metadaten des Konzept-Foliensatzes neutral.
 
 Englisch ohne Lücken (09.11.2026): Namen der KI-Bausteine, Anbietervorlagen, Fehler von Modellen und Websuche sowie Warnhinweise an KI-Ergebnissen kommen aus dem Textkatalog (`aigw.*`) und erscheinen in der Sprache der lesenden Person; `npm run check:texts` prüft auch `server/src/ai/`. Neuer englischer Demo-Arbeitsbereich `demo-en` (Konten `…@demo-en.example`), die Demo öffnet in der Sprache der Seite. Neue englische Arbeitsbereiche bekommen die Tonalität der KI-Texte auf Englisch. README und alle Enterprise-Unterlagen gibt es zusätzlich auf Englisch (`README.en.md`, `docs/enterprise/*.en.md`).

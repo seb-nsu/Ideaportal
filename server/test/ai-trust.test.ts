@@ -160,6 +160,12 @@ describe('one-page Gate 2 brief (R2-43)', () => {
       expect(f.href).toMatch(new RegExp(`^/ideen/${ideaId}/steckbrief/(zusammenfassung|analysen|scorecard)#`));
     }
     expect(item.figures.find((f: { label: string; unit: string }) => f.label === 'Aufwand' && f.unit === '€').value).toBe(45000);
+    // Readiness is computed from checks, not written by the model (after founder-skill "plan").
+    expect(item.readiness.checks.map((c: { id: string }) => c.id)).toEqual(['business_case', 'payback', 'red_risks', 'experiment', 'reviews']);
+    expect(item.readiness.checks.find((c: { id: string }) => c.id === 'experiment').ok).toBe(false);
+    expect(item.readiness.ready).toBe(false);
+    // The three lenses are part of the brief (counterarguments block).
+    expect(item.lenses.data.lenses.map((l: { lens: string }) => l.lens)).toEqual(['value', 'adoption', 'focus']);
   });
 
   it('measures reading time without storing the reader', async () => {

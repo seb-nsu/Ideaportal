@@ -604,6 +604,10 @@ interface Experiment {
   outcome: string | null;
   result: string | null;
   createdBy: string | null;
+  assumptionId?: string | null;
+  assumptionLabel?: string | null;
+  measuredValue?: number | null;
+  appliedAt?: string | null;
 }
 
 export function Experiments({ ideaId, onDone }: { ideaId: string; onDone: () => void }) {
@@ -671,13 +675,19 @@ function ExperimentItem({ ideaId, x, canManage, onDone }: { ideaId: string; x: E
   const [open, setOpen] = useState(false);
   const [outcome, setOutcome] = useState('confirmed');
   const [result, setResult] = useState('');
+  const [measured, setMeasured] = useState('');
   const { busy, error, run } = useAction();
+  const apply = useAction();
+  const linked = !!x.assumptionId && !!x.assumptionLabel;
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (await run(() => api.post(`/api/ideas/${ideaId}/experiments/${x.id}/result`, { outcome, result }))) {
+    if (await run(() => api.post(`/api/ideas/${ideaId}/experiments/${x.id}/result`, { outcome, result, ...(linked && measured !== '' ? { measured: Number(measured) } : {}) }))) {
       setOpen(false);
       onDone();
     }
+  };
+  const takeOver = async () => {
+    if (await apply.run(() => api.post(`/api/ideas/${ideaId}/experiments/${x.id}/apply`))) onDone();
   };
   return (
     <li>
@@ -691,6 +701,12 @@ function ExperimentItem({ ideaId, x, canManage, onDone }: { ideaId: string; x: E
       </div>
       {x.smallestTest && <p className="small pre" style={{ margin: '4px 0' }}>{x.smallestTest}</p>}
       {x.result && <p className="small pre" style={{ margin: '4px 0' }}><strong>{t('elaboration.exp.resultLabel')}</strong> {x.result}</p>}
+      {linked && <p className="small" style={{ margin: '4px 0' }}>{t('elaboration.exp.measures', { label: x.assumptionLabel! })}{x.measuredValue != null && ` ${t('elaboration.exp.measuredValue', { value: formatNumber(x.measuredValue) })}`}</p>}
+      {linked && x.measuredValue != null && x.appliedAt && <p className="small muted">{t('elaboration.exp.applied', { date: formatDate(x.appliedAt) })}</p>}
+      <ErrorBox error={apply.error} />
+      {canManage && linked && x.status === 'done' && x.measuredValue != null && !x.appliedAt && (
+        <button type="button" onClick={takeOver} disabled={apply.busy}>{t('elaboration.exp.apply', { label: x.assumptionLabel! })}</button>
+      )}
       {canManage && x.status === 'running' && !open && <button type="button" className="link" onClick={() => setOpen(true)}>{t('elaboration.exp.record')}</button>}
       {open && (
         <form onSubmit={submit}>
@@ -704,6 +720,11 @@ function ExperimentItem({ ideaId, x, canManage, onDone }: { ideaId: string; x: E
           <Field id={`exp-result-${x.id}`} label={t('elaboration.exp.resultQuestion')} hint={t('elaboration.exp.resultHint')}>
             <textarea id={`exp-result-${x.id}`} value={result} onChange={(e) => setResult(e.target.value)} required />
           </Field>
+          {linked && (
+            <Field id={`exp-measured-${x.id}`} label={t('elaboration.exp.measuredLabel', { label: x.assumptionLabel! })} hint={t('elaboration.exp.measuredHint')}>
+              <input id={`exp-measured-${x.id}`} type="number" step="any" value={measured} onChange={(e) => setMeasured(e.target.value)} />
+            </Field>
+          )}
           <div className="row">
             <button type="button" onClick={() => setOpen(false)}>{t('elaboration.cancel')}</button>
             <button className="primary" disabled={busy}>{t('elaboration.exp.saveResult')}</button>

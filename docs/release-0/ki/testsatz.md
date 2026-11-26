@@ -161,7 +161,7 @@ Jeder Fall bekommt einen Wert von 0 bis 1; je Agent zählt der Mittelwert. Die P
 | `business_case` | Stichprobe | low ≤ base ≤ high, keine negativen Werte, Nutzen und Kosten, offene Werte mit Leitfrage | 0,80 |
 | `risk_check` | Stichprobe | sechs Bereiche mit Ampel und Stelle; Datenschutz markiert, wenn personenbezogene Daten vorkommen | 0,80 |
 | `success_story` | Stichprobe | Zahlen nur aus den Fakten; Namen aus `personalData` sind eine harte Verletzung | 0,80 |
-| übrige Agenten (`discussion_summary`, `competition`, `patents`, `positioning`, `experiment`, `dossier_draft`, `gate2_brief`, `counterarguments`, `implementation_package`, `challenge_suggestions`) | Stichprobe | Struktur und Plausibilität je Agent, z. B. Wettbewerber nur aus Quellen, Patentnummern nur aus Treffern, keine rechtliche Freigabe, Hypothese als Wenn-dann mit Schwellenwert, 3–5 Gegenargumente, Gate-2-Vorlage höchstens 250 Wörter | 0,80 |
+| übrige Agenten (`discussion_summary`, `competition`, `patents`, `positioning`, `experiment`, `dossier_draft`, `gate2_brief`, `counterarguments`, `review_lens`, `implementation_package`, `challenge_suggestions`) | Stichprobe | Struktur und Plausibilität je Agent, z. B. Wettbewerber nur aus Quellen, Patentnummern nur aus Treffern, keine rechtliche Freigabe, Hypothese als Wenn-dann mit Schwellenwert, 3–5 Gegenargumente, Linse ohne Urteil oder Punktzahl, Positionierungssatz, Kritik nur mit Quelle, Einführungshürden im Umsetzungspaket, Gate-2-Vorlage höchstens 250 Wörter | 0,80 |
 
 **Allgemeine Prüfungen** für jeden Agenten:
 

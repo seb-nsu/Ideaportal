@@ -343,7 +343,7 @@ export function mainDescription(l: Locale, idea: IdeaRow, impl: ImplementationRo
   const parts: string[] = [];
   if (pkg) {
     for (const f of BRIEF_FIELDS) {
-      const v = pkg.brief[f].trim();
+      const v = (pkg.brief[f] ?? '').trim();
       if (v) parts.push(`${L(l, `conn.pkg.h.${f}` as MessageKey)}\n${v}`);
     }
   } else {

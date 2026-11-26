@@ -7,7 +7,9 @@ import type { AgentCall } from './gateway.js';
 // Implementation package (R3-18): project brief and user stories from an approved idea. The
 // agent only drafts; people edit the package and decide what is handed over to the connectors.
 
-export const BRIEF_FIELDS = ['goal', 'scope', 'outOfScope', 'benefit', 'effort', 'risks', 'milestones', 'openQuestions'] as const;
+// rollout and operation after founder-skill "offer" and "ops": hurdles of the introduction with a
+// counter-measure each, and who runs and maintains the solution afterwards.
+export const BRIEF_FIELDS = ['goal', 'scope', 'outOfScope', 'benefit', 'effort', 'risks', 'rollout', 'operation', 'milestones', 'openQuestions'] as const;
 export type BriefField = (typeof BRIEF_FIELDS)[number];
 
 const text = (max: number) => z.string().max(max);
@@ -44,7 +46,7 @@ export function packageCall(idea: IdeaFacts, facts: PackageFacts): AgentCall<Imp
     maxTokens: 6000,
     tools: [],
     schema: packageSchema,
-    prompt: `Erstelle aus der freigegebenen Idee den Entwurf eines Umsetzungspakets. "brief" ist der Projektsteckbrief mit den Feldern goal (Ziel), scope (Umfang), outOfScope (nicht im Umfang), benefit (Nutzen), effort (Aufwand), risks (Risiken), milestones (Meilensteine bis zum Zieltermin), openQuestions (offene Fragen). "stories" sind 3 bis 10 User Stories im Format "Als … möchte ich …, damit …" mit Titel und höchstens 5 prüfbaren Akzeptanzkriterien.
+    prompt: `Erstelle aus der freigegebenen Idee den Entwurf eines Umsetzungspakets. "brief" ist der Projektsteckbrief mit den Feldern goal (Ziel), scope (Umfang), outOfScope (nicht im Umfang), benefit (Nutzen), effort (Aufwand), risks (Risiken), rollout (Einführungshürden und Gegenmaßnahmen: was die Betroffenen vor der Einführung zögern lässt, was während der Umstellung stört, etwa Schulung oder Doppelarbeit, und was danach zum Rückfall in alte Abläufe führt; je Hürde eine Gegenmaßnahme), operation (Betrieb und Verantwortung nach der Umsetzung: welche Rolle betreibt und pflegt die Lösung, welche wiederkehrenden Aufgaben fallen an; Rollen, keine Namen), milestones (Meilensteine bis zum Zieltermin), openQuestions (offene Fragen). "stories" sind 3 bis 10 User Stories im Format "Als … möchte ich …, damit …" mit Titel und höchstens 5 prüfbaren Akzeptanzkriterien.
 Übernimm Zahlen nur aus Steckbrief und Idee und kennzeichne sie als Schätzung, wenn sie keine Quelle haben. Fehlt etwas, schreibe eine offene Frage statt einer Annahme. Nenne keine Personen.
 
 ${ideaBlock(idea)}
@@ -78,6 +80,8 @@ ${fence('steckbrief', JSON.stringify(facts).slice(0, 30_000))}`,
           benefit: (d.benefit || benefit).slice(0, 4000),
           effort: (d.effort || T(l, 'conn.pkg.effortOpen')).slice(0, 4000),
           risks: (d.risks || T(l, 'conn.pkg.risksOpen')).slice(0, 4000),
+          rollout: T(l, 'conn.pkg.rolloutOpen'),
+          operation: T(l, 'conn.pkg.operationOpen'),
           milestones: facts.targetDate ? T(l, 'conn.pkg.milestones', { date: facts.targetDate }) : T(l, 'conn.pkg.milestonesOpen'),
           openQuestions: T(l, 'conn.pkg.openQuestions'),
         },

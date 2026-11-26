@@ -76,6 +76,7 @@ const AGENT_BLOCK: Partial<Record<AgentName, { block: FullBlock; types: ('intern
   risk_check: { block: 'risk_check', types: ['internal', 'product'] },
   experiment: { block: 'experiment', types: ['internal', 'product'] },
   counterarguments: { block: 'counterarguments', types: ['internal', 'product'] },
+  review_lens: { block: 'counterarguments', types: ['internal', 'product'] },
   dossier_draft: { block: 'dossier_draft', types: ['internal', 'product'] },
 };
 

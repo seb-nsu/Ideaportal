@@ -112,7 +112,7 @@ export async function enforcePlan(req: FastifyRequest, user: SessionUser): Promi
 // Building blocks of the full analysis; the quota counts full analyses, so only these agents
 // are stopped at 100 %. Coach, short analysis and triage help keep working.
 const QUOTA_AGENTS: ReadonlySet<AgentName> = new Set<AgentName>([
-  'competition', 'patents', 'positioning', 'market_size', 'internal_market', 'business_case', 'risk_check', 'experiment', 'counterarguments', 'dossier_draft',
+  'competition', 'patents', 'positioning', 'market_size', 'internal_market', 'business_case', 'risk_check', 'experiment', 'counterarguments', 'review_lens', 'dossier_draft',
 ]);
 
 /**

@@ -19,6 +19,7 @@ export const aigw: Record<string, string> = {
   'aigw.agent.dossier_draft': 'Draft idea profile',
   'aigw.agent.gate2_brief': 'Gate 2 brief',
   'aigw.agent.counterarguments': 'Counterarguments and pre-mortem',
+  'aigw.agent.review_lens': 'Review through three lenses',
   'aigw.agent.challenge_suggestions': 'Challenge suggestions',
   'aigw.agent.success_story': 'Success story',
   'aigw.agent.portfolio_query': 'Questions to the portfolio',

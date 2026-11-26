@@ -190,7 +190,7 @@ footer { font-size: 13px; color: var(--muted); display: grid; gap: 6px; border-t
 <div class="wrap">
 
 <header>
-  <div class="eyebrow">Ideenportal · Stand des Codes vom 25.11.2026</div>
+  <div class="eyebrow">Ideenportal · Stand des Codes vom 26.11.2026</div>
   <h1>So arbeitet das Ideenportal, und wo die KI mitarbeitet</h1>
   <p class="lead">Eine Idee läuft durch sieben Stationen mit drei Gates. An jedem Gate entscheiden Menschen. Die KI liefert vorher Entwürfe, Analysen und Vorschläge, die eine Person prüft und per Klick übernimmt oder verwirft. Alles hier ist aus dem Quellcode abgeleitet (<code>server/src/ai</code>, <code>services/workflow.ts</code>, <code>jobs/deadlines.ts</code>).</p>
   <div class="legend" aria-label="Legende">
@@ -200,7 +200,7 @@ footer { font-size: 13px; color: var(--muted); display: grid; gap: 6px; border-t
     <span><i class="sw t"></i>Zeitgesteuert oder automatisch ausgelöst</span>
   </div>
   <div class="facts">
-    <div class="fact"><b>30</b><span>KI-Agenten, alle über ein KI-Gateway</span></div>
+    <div class="fact"><b>31</b><span>KI-Agenten, alle über ein KI-Gateway</span></div>
     <div class="fact"><b>2</b><span>laufen ohne Klick an: Kurz- und Vollanalyse</span></div>
     <div class="fact"><b>0</b><span>Agenten mit Schreibrechten; sie liefern nur Information</span></div>
     <div class="fact"><b>5 € / 200 €</b><span>Standard-Budget je Idee und je Monat</span></div>
@@ -258,6 +258,7 @@ footer { font-size: 13px; color: var(--muted); display: grid; gap: 6px; border-t
         <div class="ki">
           <span class="chip">Gremium-Vorlage</span>
           <span class="chip">Gegenargumente</span>
+          <span class="chip">Prüfblick, 3 Linsen</span>
         </div>
       </div>
       <div class="stage">
@@ -475,6 +476,17 @@ footer { font-size: 13px; color: var(--muted); display: grid; gap: 6px; border-t
               <div class="trig"><span class="badge auto">Teil der Vollanalyse</span><span class="badge cls">tief</span></div>
               <p>Die 3 bis 5 stärksten sachlichen Gegenargumente und die Frage „Es ist ein Jahr später und die Idee ist gescheitert. Warum?“, mit Frühwarnzeichen. Damit das Gremium nicht nur bestätigt.</p>
             </div>
+            <div class="agent">
+              <div class="agent-top"><b>Prüfblick mit drei Linsen</b><code>review_lens</code></div>
+              <div class="trig"><span class="badge auto">Teil der Vollanalyse</span><span class="badge cls">tief</span></div>
+              <p>Drei getrennte Aufrufe: Nutzen (Wirkung, Beleg, Zeit, Aufwand für die Betroffenen), Einführung (wer muss mitmachen, warum jetzt) und Fokus (das Eine, was streichen, Übergaben). Je Linse Stärken, die drei gefährlichsten Risiken, Fragen, Bedingungen und die stärkste Version der Idee. Der Code stellt Risiken, die mehrere Linsen nennen, nach oben und führt die Bedingungen zu einer Checkliste zusammen.</p>
+              <p class="guard">Keine Abstimmung und keine Punktzahl: Die KI entscheidet nicht. Methode nach dem Board-Skill von founder-skill (MIT), auf Mitarbeiterideen umgeschrieben.</p>
+            </div>
+            <div class="agent">
+              <div class="agent-top"><b>Vorlagereife</b><code>readiness.ts</code></div>
+              <div class="trig"><span class="badge auto">berechnet, kein Modell</span></div>
+              <p>Prüfliste in der Gremium-Vorlage: Business Case vollständig, Amortisation im Basisszenario innerhalb des Zeitraums, keine rote Ampel, ein Experiment mit Ergebnis, alle Bausteine geprüft (wenn eingestellt). Zeigt, wie belegt die Vorlage ist, nicht, ob die Idee gut ist.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -501,7 +513,7 @@ footer { font-size: 13px; color: var(--muted); display: grid; gap: 6px; border-t
             <div class="agent">
               <div class="agent-top"><b>Umsetzungspaket</b><code>implementation_package</code></div>
               <div class="trig"><span class="badge click">„Paket erzeugen“ bei der Übergabe</span><span class="badge cls">tief</span></div>
-              <p>Schreibt aus Steckbrief, Zieltermin und Zielkanal ein Briefing und User Stories für das Zielsystem. Eine Person bearbeitet sie, bevor sie übergeben werden.</p>
+              <p>Schreibt aus Steckbrief, Zieltermin und Zielkanal ein Briefing und User Stories für das Zielsystem, mit Einführungshürden und Gegenmaßnahmen sowie Betrieb und Verantwortung nach der Umsetzung. Eine Person bearbeitet sie, bevor sie übergeben werden.</p>
             </div>
           </div>
         </div>
@@ -550,21 +562,21 @@ footer { font-size: 13px; color: var(--muted); display: grid; gap: 6px; border-t
   </div>
   <div class="pipe-scroll" tabindex="0" aria-label="Vollanalyse, seitlich scrollbar">
     <div class="pipe">
-      <div class="pstep research"><span class="n">VORHER</span><b>Recherche</b><span>Interne Ideen, 3 Websuchen, 1 Patentsuche, Seitenabruf für die Quellenprüfung</span></div>
-      <div class="pstep"><span class="n">1</span><b>Wettbewerb</b><code>competition</code><span>Wettbewerber und Ersatzprodukte, oder fertige Lösungen und Open Source</span></div>
+      <div class="pstep research"><span class="n">VORHER</span><b>Recherche</b><span>Interne Ideen, 4 Websuchen, 1 Patentsuche, Seitenabruf für die Quellenprüfung</span></div>
+      <div class="pstep"><span class="n">1</span><b>Wettbewerb</b><code>competition</code><span>Wettbewerber und Ersatzprodukte, oder fertige Lösungen, Open Source und heutiger Umweg; Kritik aus Bewertungen</span></div>
       <div class="pstep"><span class="n">2</span><b>Patente</b><code>patents</code><span>Stand der Technik, keine rechtliche Bewertung</span></div>
-      <div class="pstep"><span class="n">3</span><b>Positionierung</b><code>positioning</code><span>Karte mit 2 Achsen, Empfehlung kaufen, bauen, Prozess ändern</span></div>
+      <div class="pstep"><span class="n">3</span><b>Positionierung</b><code>positioning</code><span>Karte mit 2 Achsen, Positionierungssatz, Lücke (auch „keine“), Empfehlung kaufen, bauen, Prozess ändern</span></div>
       <div class="pstep"><span class="n">4</span><b>Markt</b><code>market_size</code> <code>internal_market</code><span>Produkt: Marktgröße als Spanne, top-down und bottom-up. Intern: Lösungsmarkt und Hebel</span></div>
-      <div class="pstep"><span class="n">5</span><b>Business Case</b><code>business_case</code><span>KI liefert Annahmen, der Code rechnet 3 Szenarien, Amortisation, Sensitivität</span></div>
+      <div class="pstep"><span class="n">5</span><b>Business Case</b><code>business_case</code><span>KI liefert Annahmen, der Code rechnet 3 Szenarien mit Hochlauf, Amortisation, Sensitivität und Stellschraube</span></div>
       <div class="pstep"><span class="n">6</span><b>Risiko-Check</b><code>risk_check</code><span>Ampel für Datenschutz, KI-Verordnung, Sicherheit, Recht, Patent, Arbeitnehmererfindung</span></div>
-      <div class="pstep"><span class="n">7</span><b>Experiment</b><code>experiment</code><span>Kleinster Test der größten Unsicherheit mit Erfolgskriterium</span></div>
-      <div class="pstep"><span class="n">8</span><b>Gegenargumente</b><code>counterarguments</code><span>Stärkste Einwände und Pre-Mortem</span></div>
+      <div class="pstep"><span class="n">7</span><b>Experiment</b><code>experiment</code><span>Kleinster Test der größten Unsicherheit mit Erfolgskriterium; der Messwert ersetzt per Klick die Annahme im Business Case</span></div>
+      <div class="pstep"><span class="n">8</span><b>Gegenargumente</b><code>counterarguments</code> <code>review_lens</code><span>Stärkste Einwände, Pre-Mortem und Prüfblick mit drei Linsen</span></div>
       <div class="pstep"><span class="n">9</span><b>Steckbrief-Entwurf</b><code>dossier_draft</code><span>Fasst alles zusammen, Seite 1 mit höchstens 250 Wörtern</span></div>
     </div>
     <div class="deps">
       <span><b>3</b> nutzt das Ergebnis von 1</span>
       <span><b>5</b> nutzt den Hebel oder die Marktgröße aus 4</span>
-      <span><b>7</b> nutzt die Risiken aus 6</span>
+      <span><b>7</b> nutzt die Risiken aus 6 und die Annahmen aus 5</span>
       <span><b>8</b> und <b>9</b> nutzen alle vorherigen Bausteine</span>
     </div>
   </div>

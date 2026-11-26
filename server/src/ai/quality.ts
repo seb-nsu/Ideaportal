@@ -13,7 +13,7 @@ import { sourceMetrics, type BlockSourceMetric } from './sourcecheck.js';
 /** Building blocks of the analyses that get a review status. */
 export const REVIEW_KINDS = [
   'short_analysis', 'competition', 'patents', 'positioning', 'market_size', 'internal_market',
-  'business_case', 'risk_check', 'experiment', 'counterarguments', 'dossier_draft',
+  'business_case', 'risk_check', 'experiment', 'counterarguments', 'review_lens', 'dossier_draft',
 ] as const;
 
 export type ReviewStatus = 'unchecked' | 'checked' | 'corrected';

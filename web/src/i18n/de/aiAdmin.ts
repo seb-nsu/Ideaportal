@@ -158,6 +158,8 @@ export const aiAdmin = {
   'aiAdmin.auto.short': 'Kurzanalyse und Triage-Vorschlag nach jeder Einreichung',
   'aiAdmin.auto.full': 'Vollanalyse und Steckbrief-Entwurf bei Spur „Ausarbeiten“',
   'aiAdmin.auto.tone': 'Tonalität der Rückmeldungen',
+  'aiAdmin.auto.ramp': 'Hochlauf im Business Case (Monate)',
+  'aiAdmin.auto.rampHint': 'So viele Monate dauert es, bis eine Idee ihren vollen Nutzen bringt. Bis dahin steigt der Nutzen gleichmäßig, laufende Kosten zählen ab Monat 1. 0 heißt: voller Nutzen ab Monat 1.',
   'aiAdmin.save': 'KI-Einstellungen speichern',
 
   'aiAdmin.quality.title': 'Qualität',
