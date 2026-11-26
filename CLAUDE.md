@@ -12,7 +12,7 @@ Dieses Repository enthält das **Ideenportal**: ein KI-gestütztes Ideenmanageme
 | `backlog/backlog.csv`, `backlog/backlog.json` | Backlog maschinenlesbar, erzeugt aus dem Umsetzungskonzept mit `python3 tools/extract_backlog.py` |
 | `docs/02-produktkonzept/produktkonzept.md` | Produktkonzept: Vision, Module, Datenmodell, Status-Logik, KI-Konzept, interner Einsatz, SaaS (Markt, Zielgruppe, Preise, Geschäftsmodell) |
 | `docs/01-konzept-v2/` | Überarbeitetes Prozesskonzept (Foliensatz + Text), Grundlage für Gates, Triage, Scorecard, Rollen |
-| `docs/diagramme/` | Diagramme als PNG (Status-Logik, KI-Kreislauf, Marktkarte, Architektur, Releaseplan, Roadmap) |
+| `docs/diagramme/` | Diagramme als PNG (Status-Logik, KI-Kreislauf, Marktkarte, Architektur, Releaseplan, Roadmap) und `ideenportal-landkarte.html` (Ideenfluss, Gates, KI-Agenten mit Auslösern, KI-Gateway; aus dem Code abgeleitet) |
 
 Die Markdown-Dateien sind Exporte der Live-Dokumente in Claude Docs vom 12.10.2026. Ab jetzt ist **dieses Repository die Arbeitsgrundlage**. Wenn du Konzepte änderst, ändere die Markdown-Datei und erzeuge den Backlog neu.
 

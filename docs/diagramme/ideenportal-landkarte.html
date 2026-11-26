@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ideenportal Landkarte</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap">
+<style>
+/* Layout: eine Lesespalte mit breiten Diagrammflächen; links Mensch und Status, rechts die KI, gelb das Zeitgesteuerte */
+:root {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface-2: #eaeef4;
+  --fg: #17202b;
+  --muted: #566170;
+  --line: #d3dae3;
+  --human: #1d5fd1;
+  --human-soft: #e4edfc;
+  --ai: #0b7a6f;
+  --ai-soft: #dcf1ed;
+  --auto: #8a5a00;
+  --auto-soft: #fff1d2;
+  --gate: #17202b;
+  --gate-fg: #ffffff;
+  --red: #b42318;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151b; --surface: #1a2028; --surface-2: #232b35; --fg: #e7ecf2; --muted: #a2adbb; --line: #34404d;
+    --human: #8ab0ff; --human-soft: #1c2a43; --ai: #4fd1bf; --ai-soft: #12302c; --auto: #f0bf5a; --auto-soft: #33280f;
+    --gate: #e7ecf2; --gate-fg: #11151b; --red: #ff8a80; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151b; --surface: #1a2028; --surface-2: #232b35; --fg: #e7ecf2; --muted: #a2adbb; --line: #34404d;
+  --human: #8ab0ff; --human-soft: #1c2a43; --ai: #4fd1bf; --ai-soft: #12302c; --auto: #f0bf5a; --auto-soft: #33280f;
+  --gate: #e7ecf2; --gate-fg: #11151b; --red: #ff8a80; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 56px; }
+h1, h2, h3 { font-family: var(--font-head); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(30px, 5vw, 46px); letter-spacing: -0.01em; }
+h2 { font-size: clamp(23px, 3vw, 30px); }
+h3 { font-size: 18px; }
+p { margin: 0; max-width: 70ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lead { font-size: 17px; color: var(--muted); }
+section { display: grid; gap: 20px; }
+.sec-head { display: grid; gap: 8px; }
+a { color: var(--human); }
+
+/* Header */
+header { display: grid; gap: 18px; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 14px; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.sw { width: 14px; height: 14px; border-radius: 3px; display: inline-block; flex: none; }
+.sw.h { background: var(--human); }
+.sw.a { background: var(--ai); }
+.sw.t { background: var(--auto); }
+.sw.g { background: var(--gate); transform: rotate(45deg) scale(0.8); border-radius: 2px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: grid; gap: 2px; }
+.fact b { font-family: var(--font-head); font-size: 26px; font-variant-numeric: tabular-nums; }
+.fact span { color: var(--muted); font-size: 13px; }
+
+/* Overview strip */
+.strip-scroll { overflow-x: auto; padding-bottom: 6px; }
+.strip { display: grid; grid-template-columns: repeat(7, minmax(128px, 1fr)); gap: 0; min-width: 900px; position: relative; }
+.stage { display: grid; grid-template-rows: auto auto 1fr; gap: 8px; padding: 0 6px; position: relative; }
+.stage .node { background: var(--surface); border: 1.5px solid var(--human); border-radius: 8px; padding: 10px; text-align: center; font-weight: 600; font-size: 14px; position: relative; z-index: 1; }
+.stage .node small { display: block; font-weight: 400; color: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+.stage.gate .node { background: var(--gate); color: var(--gate-fg); border-color: var(--gate); }
+.stage.gate .node small { color: var(--gate-fg); opacity: 0.75; }
+.stage::before { content: ""; position: absolute; top: 28px; left: -6px; right: -6px; height: 2px; background: var(--line); z-index: 0; }
+.stage:first-child::before { left: 50%; }
+.stage:last-child::before { right: 50%; }
+.stage .who { font-size: 12px; color: var(--muted); text-align: center; }
+.stage .ki { display: grid; gap: 4px; align-content: start; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; line-height: 1.3; padding: 4px 7px; border-radius: 5px; background: var(--ai-soft); color: var(--fg); border-left: 3px solid var(--ai); }
+.chip.t { background: var(--auto-soft); border-left-color: var(--auto); }
+.chip .k { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+
+/* Phase walkthrough */
+.phases { display: grid; gap: 0; }
+.phase { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 0 18px; }
+.rail { display: flex; flex-direction: column; align-items: center; }
+.num { width: 40px; height: 40px; border-radius: 50%; background: var(--surface); border: 2px solid var(--human); color: var(--human); font-family: var(--font-head); font-weight: 700; font-size: 18px; display: grid; place-items: center; flex: none; }
+.phase.gate .num { background: var(--gate); color: var(--gate-fg); border-color: var(--gate); border-radius: 6px; transform: rotate(45deg); }
+.phase.gate .num span { transform: rotate(-45deg); font-size: 15px; }
+.rail::after { content: ""; flex: 1; width: 2px; background: var(--line); margin-top: 6px; }
+.phase:last-child .rail::after { display: none; }
+.pbody { padding-bottom: 36px; display: grid; gap: 14px; min-width: 0; }
+.ptitle { display: grid; gap: 4px; padding-top: 6px; }
+.status { display: flex; flex-wrap: wrap; gap: 6px; }
+.st { font-family: var(--font-mono); font-size: 11.5px; padding: 2px 7px; border-radius: 4px; background: var(--surface-2); color: var(--muted); }
+.cols { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr); gap: 14px; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.box h4 { margin: 0; font-size: 12px; font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--human); }
+.box.kibox h4 { color: var(--ai); }
+.box ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.box li { padding-left: 2px; }
+.auto-note { background: var(--auto-soft); border-radius: 8px; padding: 10px 14px; font-size: 14px; display: flex; gap: 10px; align-items: flex-start; }
+.auto-note .tag { font-family: var(--font-mono); font-size: 11px; color: var(--auto); font-weight: 500; white-space: nowrap; padding-top: 2px; }
+
+.agent { border-left: 3px solid var(--ai); padding: 2px 0 2px 12px; display: grid; gap: 4px; }
+.agent-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.agent-top b { font-size: 15px; }
+.agent-top code { color: var(--muted); }
+.trig { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.badge { font-size: 11.5px; font-weight: 500; padding: 1px 7px; border-radius: 10px; white-space: nowrap; }
+.badge.auto { background: var(--auto-soft); color: var(--auto); }
+.badge.click { background: var(--human-soft); color: var(--human); }
+.badge.cls { background: var(--surface-2); color: var(--muted); font-family: var(--font-mono); font-size: 10.5px; }
+.agent p { font-size: 14px; color: var(--fg); }
+.agent .guard { font-size: 13px; color: var(--muted); }
+
+.lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.lane { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font-size: 13px; display: grid; gap: 2px; background: var(--surface); }
+.lane b { font-size: 14px; }
+.lane span { color: var(--muted); }
+
+/* Full analysis pipeline */
+.pipe-scroll { overflow-x: auto; }
+.pipe { min-width: 860px; display: grid; grid-template-columns: 190px repeat(9, minmax(0, 1fr)); gap: 6px; align-items: stretch; }
+.pstep { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--ai); border-radius: 6px; padding: 8px; font-size: 12.5px; display: grid; gap: 4px; align-content: start; position: relative; }
+.pstep b { font-size: 13px; line-height: 1.25; }
+.pstep code { font-size: 10px; color: var(--muted); word-break: break-word; }
+.pstep .n { font-family: var(--font-mono); font-size: 10px; color: var(--ai); }
+.pstep.research { border-top-color: var(--auto); background: var(--auto-soft); }
+.pstep.research .n { color: var(--auto); }
+.deps { min-width: 860px; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+.deps span b { color: var(--fg); font-weight: 600; }
+
+/* Gateway chain */
+.chain { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; counter-reset: g; }
+.cstep { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; align-content: start; }
+.cstep::before { counter-increment: g; content: counter(g, decimal-leading-zero); font-family: var(--font-mono); font-size: 11px; color: var(--ai); }
+.cstep b { font-size: 14.5px; }
+.cstep p { font-size: 13.5px; color: var(--muted); }
+.cstep .stop { color: var(--red); font-size: 12.5px; font-family: var(--font-mono); }
+
+/* Architecture */
+.arch-scroll { overflow-x: auto; }
+.arch { min-width: 820px; display: grid; grid-template-columns: 1fr 1.25fr 1fr; gap: 14px; align-items: stretch; }
+.acol { display: grid; gap: 10px; align-content: start; }
+.acol > .eyebrow { padding-left: 2px; }
+.ab { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 3px; font-size: 13px; }
+.ab b { font-size: 14px; }
+.ab span { color: var(--muted); }
+.ab.core { border: 1.5px solid var(--human); }
+.ab.kib { border: 1.5px solid var(--ai); background: var(--ai-soft); }
+.ab.tim { border: 1.5px solid var(--auto); background: var(--auto-soft); }
+.ab.db { border: 1.5px solid var(--fg); }
+.flowtag { font-family: var(--font-mono); font-size: 11px; color: var(--muted); text-align: center; padding: 2px 0; }
+
+/* Cross-cutting table */
+.tbl-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 13.5px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--surface-2); }
+tr:last-child td { border-bottom: 0; }
+td b { display: block; }
+td code { color: var(--muted); }
+
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; }
+.rule b { font-size: 15px; }
+.rule p { font-size: 14px; color: var(--muted); }
+
+footer { font-size: 13px; color: var(--muted); display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 18px; }
+
+@media (max-width: 760px) {
+  .cols { grid-template-columns: 1fr; }
+  .phase { grid-template-columns: 40px minmax(0, 1fr); gap: 0 12px; }
+  .num { width: 34px; height: 34px; font-size: 15px; }
+  .pbody { padding-bottom: 28px; }
+}
+:focus-visible { outline: 2px solid var(--human); outline-offset: 2px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Ideenportal · Stand des Codes vom 25.11.2026</div>
+  <h1>So arbeitet das Ideenportal, und wo die KI mitarbeitet</h1>
+  <p class="lead">Eine Idee läuft durch sieben Stationen mit drei Gates. An jedem Gate entscheiden Menschen. Die KI liefert vorher Entwürfe, Analysen und Vorschläge, die eine Person prüft und per Klick übernimmt oder verwirft. Alles hier ist aus dem Quellcode abgeleitet (<code>server/src/ai</code>, <code>services/workflow.ts</code>, <code>jobs/deadlines.ts</code>).</p>
+  <div class="legend" aria-label="Legende">
+    <span><i class="sw h"></i>Mensch handelt, Status der Idee</span>
+    <span><i class="sw g"></i>Gate: Menschen entscheiden</span>
+    <span><i class="sw a"></i>KI-Agent</span>
+    <span><i class="sw t"></i>Zeitgesteuert oder automatisch ausgelöst</span>
+  </div>
+  <div class="facts">
+    <div class="fact"><b>30</b><span>KI-Agenten, alle über ein KI-Gateway</span></div>
+    <div class="fact"><b>2</b><span>laufen ohne Klick an: Kurz- und Vollanalyse</span></div>
+    <div class="fact"><b>0</b><span>Agenten mit Schreibrechten; sie liefern nur Information</span></div>
+    <div class="fact"><b>5 € / 200 €</b><span>Standard-Budget je Idee und je Monat</span></div>
+  </div>
+</header>
+
+<!-- ============================ Überblick ============================ -->
+<section aria-labelledby="ov">
+  <div class="sec-head">
+    <div class="eyebrow">Überblick</div>
+    <h2 id="ov">Der Ideenfluss auf einen Blick</h2>
+    <p>Oben die Station, darunter wer handelt und welche KI dort mitläuft. Auf dem Handy seitlich wischen.</p>
+  </div>
+  <div class="strip-scroll" tabindex="0" aria-label="Ideenfluss, seitlich scrollbar">
+    <div class="strip">
+      <div class="stage">
+        <div class="node">Einreichen<small>draft → submitted</small></div>
+        <div class="who">Mitarbeitende</div>
+        <div class="ki">
+          <span class="chip">Ideen-Coach</span>
+          <span class="chip">Spracheingabe</span>
+          <span class="chip">Bild beschreiben</span>
+          <span class="chip">Abgrenzung</span>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="node">Kurzanalyse<small>automatisch</small></div>
+        <div class="who">Hintergrund-Worker</div>
+        <div class="ki">
+          <span class="chip t">sofort nach Einreichen</span>
+          <span class="chip">Kurzanalyse</span>
+          <span class="chip">Triage-Vorschlag</span>
+        </div>
+      </div>
+      <div class="stage gate">
+        <div class="node">Gate 1 Triage<small>10 Arbeitstage</small></div>
+        <div class="who">Triage-Team</div>
+        <div class="ki">
+          <span class="chip">Antwortentwurf</span>
+          <span class="chip">Diskussion zusammenfassen</span>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="node">Ausarbeiten<small>elaboration</small></div>
+        <div class="who">Mentor:in, Ideengeber:in</div>
+        <div class="ki">
+          <span class="chip t">bei Spur „Ausarbeiten“</span>
+          <span class="chip">Vollanalyse, 9 Bausteine</span>
+          <span class="chip">Steckbrief-Entwurf</span>
+        </div>
+      </div>
+      <div class="stage gate">
+        <div class="node">Gate 2 Gremium<small>Entscheidung</small></div>
+        <div class="who">Gremium</div>
+        <div class="ki">
+          <span class="chip">Gremium-Vorlage</span>
+          <span class="chip">Gegenargumente</span>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="node">Umsetzen<small>implementing · piloting</small></div>
+        <div class="who">Umsetzungsverantwortliche</div>
+        <div class="ki">
+          <span class="chip">Umsetzungspaket</span>
+        </div>
+      </div>
+      <div class="stage gate">
+        <div class="node">Gate 3 Wirkung<small>nach 3 Monaten</small></div>
+        <div class="who">Triage, Controlling</div>
+        <div class="ki">
+          <span class="chip">Erfolgsgeschichte</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ Stationen im Detail ============================ -->
+<section aria-labelledby="ph">
+  <div class="sec-head">
+    <div class="eyebrow">Station für Station</div>
+    <h2 id="ph">Wer was tut, und wann welcher Agent läuft</h2>
+    <p>Jeder Agent steht mit seinem technischen Namen, dem Auslöser und der Modellklasse, die er im KI-Gateway bekommt. „Klick“ heißt: eine Person startet ihn bewusst. „Automatisch“ heißt: ein Ereignis im Ablauf stellt einen Auftrag in die Warteschlange.</p>
+  </div>
+
+  <div class="phases">
+
+    <!-- 1 -->
+    <div class="phase">
+      <div class="rail"><div class="num">1</div></div>
+      <div class="pbody">
+        <div class="ptitle">
+          <h3>Anregen und Einreichen</h3>
+          <div class="status"><span class="st">draft</span><span class="st">→ submitted</span></div>
+        </div>
+        <div class="cols">
+          <div class="box">
+            <h4>Mensch</h4>
+            <ul>
+              <li>Beschreibt eine Idee (Titel, Problem, Lösung, Nutzen) oder nur ein Problem ohne Lösung.</li>
+              <li>Wählt Themenfeld und Ideentyp (intern oder Produkt/Kunde), kann „vertraulich“ setzen.</li>
+              <li>Bestätigt beim Einreichen, dass es keine Meldung nach Hinweisgeberschutzgesetz ist.</li>
+              <li>Optional für eine Challenge, im Team oder mit Co-Autor:innen.</li>
+            </ul>
+          </div>
+          <div class="box kibox">
+            <h4>KI im Einreichungsassistenten</h4>
+            <div class="agent">
+              <div class="agent-top"><b>Ideen-Coach</b><code>coach</code></div>
+              <div class="trig"><span class="badge click">jede Nachricht im Dialog</span><span class="badge cls">schnell</span></div>
+              <p>Fragt nach Ursache, Betroffenen und Nutzen, immer nur eine Frage pro Runde. Füllt die Felder nur mit dem, was die Person gesagt hat, und meldet „fertig“, wenn Problem, Idee und Nutzen beschrieben sind.</p>
+              <p class="guard">Vorher läuft die Regelprüfung auf Meldungen. Schlägt sie an, wird der Dialog wie vertraulich behandelt und geht nur an ein lokales Modell.</p>
+            </div>
+            <div class="agent">
+              <div class="agent-top"><b>Spracheingabe</b><code>transcribe</code></div>
+              <div class="trig"><span class="badge click">Aufnahme</span><span class="badge cls">sprache</span></div>
+              <p>Wandelt die gesprochene Idee in Text um, den die Person bestätigt.</p>
+            </div>
+            <div class="agent">
+              <div class="agent-top"><b>Foto oder Screenshot beschreiben</b><code>describe_image</code></div>
+              <div class="trig"><span class="badge click">Bild hochladen</span><span class="badge cls">bild</span></div>
+              <p>Beschreibt sachlich, was zu sehen ist, und schlägt Titel, Problem und Lösung vor. Erkennt keine Personen, Text im Bild gilt als Daten.</p>
+            </div>
+            <div class="agent">
+              <div class="agent-top"><b>Abgrenzungsprüfung</b><code>boundary</code></div>
+              <div class="trig"><span class="badge click">Prüfung im Formular</span><span class="badge cls">vertraulich (lokal)</span></div>
+              <p>Prüft, ob der Text eher eine Meldung, Störung, Beschwerde oder ein Arbeitsschutzfall ist. Zuerst greifen feste Regeln; das Modell läuft nur, wenn ein lokales Modell eingerichtet ist. Gespeichert werden nur Länge und Prüfsumme des Texts.</p>
+            </div>
+          </div>
+        </div>
+        <div class="auto-note"><span class="tag">BEIM EINREICHEN</span><span>Die Regelprüfung auf Meldungen hält die Einreichung an, bis die Person bestätigt. Danach startet die Frist für Gate 1 (Standard 10 Arbeitstage), das Triage-Team wird benachrichtigt und der Auftrag <code>short_analysis</code> landet in der KI-Warteschlange.</span></div>
+      </div>
+    </div>
+
+    <!-- 2 -->
+    <div class="phase">
+      <div class="rail"><div class="num">2</div></div>
+      <div class="pbody">
+        <div class="ptitle">
+          <h3>Kurzanalyse nach dem Einreichen</h3>
+          <div class="status"><span class="st">submitted</span><span class="st">Hintergrund-Worker, alle 5 s</span></div>
+        </div>
+        <div class="cols">
+          <div class="box">
+            <h4>Recherche vor dem Agenten</h4>
+            <ul>
+              <li><b>Intern:</b> ähnliche Ideen im Portal, immer.</li>
+              <li><b>Web:</b> eine Suchanfrage. Standard nur für Produktideen; nie bei vertraulichen Ideen, möglichen Erfindungen oder reinen Problemen.</li>
+              <li><b>Seitenabruf:</b> bis zu 5 Treffer werden geladen, damit später geprüft werden kann, ob zitierte Aussagen dort wirklich stehen.</li>
+              <li>Jede Suchanfrage, die das Haus verlässt, steht im KI-Protokoll.</li>
+            </ul>
+          </div>
+          <div class="box kibox">
+            <h4>KI, automatisch</h4>
+            <div class="agent">
+              <div class="agent-top"><b>Kurzanalyse</b><code>short_analysis</code></div>
+              <div class="trig"><span class="badge auto">automatisch nach Einreichen</span><span class="badge cls">schnell</span></div>
+              <p>Höchstens eine Seite: Worum es geht, ähnliche Ideen im Portal, Wettbewerber (Produktidee) oder fertige Lösungen (interne Idee), Markt und Nutzen, offene Fragen. Prüft die Vollständigkeit: Ursache, Lösung, bezifferter Nutzen, Betroffene.</p>
+              <p class="guard">Bei einem Problem ohne Lösung stellt sie stattdessen 5 bis 7 Ursachenfragen („Warum …?“, „Seit wann …?“) und sucht nicht im Web.</p>
+            </div>
+            <div class="agent">
+              <div class="agent-top"><b>Triage-Vorschlag</b><code>triage_suggestion</code></div>
+              <div class="trig"><span class="badge auto">direkt nach der Kurzanalyse</span><span class="badge cls">schnell</span></div>
+              <p>Schlägt eine Spur vor (Schnellspur, Ausarbeiten, Weiterleiten, Ablehnen) und nutzt dafür die Schwellen des Mandanten, etwa die Personentage für die Schnellspur. Läuft nur, solange die Idee noch offen ist.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 Gate 1 -->
+    <div class="phase gate">
+      <div class="rail"><div class="num"><span>G1</span></div></div>
+      <div class="pbody">
+        <div class="ptitle">
+          <h3>Gate 1: Triage entscheidet die Spur</h3>
+          <div class="status"><span class="st">submitted</span><span class="st">in_question</span><span class="st">→ fast_lane · elaboration · forwarded · rejected · merged</span></div>
+        </div>
+        <div class="lanes">
+          <div class="lane"><b>Schnellspur</b><span>Verantwortliche:r und Zieltermin, direkt in die Umsetzung</span></div>
+          <div class="lane"><b>Ausarbeiten</b><span>Mentor:in, Timebox, Frist 30 Arbeitstage, startet die Vollanalyse</span></div>
+          <div class="lane"><b>Weiterleiten</b><span>in einen Zielkanal; Patentkanal macht die Idee vertraulich</span></div>
+          <div class="lane"><b>Ablehnen</b><span>mit Begründung an die Ideengeber:in</span></div>
+          <div class="lane"><b>Rückfrage</b><span>ohne Antwort nach 15 Arbeitstagen geschlossen</span></div>
+          <div class="lane"><b>Zusammenführen</b><span>Dublette in eine andere Idee</span></div>
+        </div>
+        <div class="cols">
+          <div class="box">
+            <h4>Mensch</h4>
+            <ul>
+              <li>Das Triage-Team sieht Kurzanalyse und Vorschlag, entscheidet aber selbst.</li>
+              <li>Die Entscheidung wird mit Begründung protokolliert und der Ideengeber:in mitgeteilt.</li>
+              <li>Ähnliche Ideen findet eine semantische Suche mit lokalem Embedding-Modell (kein Sprachmodell).</li>
+            </ul>
+          </div>
+          <div class="box kibox">
+            <h4>KI auf Klick</h4>
+            <div class="agent">
+              <div class="agent-top"><b>Antwortentwurf</b><code>reply_draft</code></div>
+              <div class="trig"><span class="badge click">Klick im KI-Bereich der Idee</span><span class="badge cls">schnell</span></div>
+              <p>Entwurf der Rückmeldung an die Ideengeber:in zur gewählten Spur, in der Tonalität, die der Mandant eingestellt hat.</p>
+            </div>
+            <div class="agent">
+              <div class="agent-top"><b>Diskussion zusammenfassen</b><code>discussion_summary</code></div>
+              <div class="trig"><span class="badge click">Klick bei Kommentaren</span><span class="badge cls">schnell</span></div>
+              <p>Konsens, Einwände und offene Fragen mit Verweis auf die Kommentarnummern. Nennt keine Namen.</p>
+            </div>
+          </div>
+        </div>
+        <div class="auto-note"><span class="tag">FRISTEN-ENGINE</span><span>Der Job-Lauf (alle 15 Minuten) erinnert 2 Arbeitstage vor Fristende, eskaliert überfällige Gates an Admin und Verantwortliche und schließt unbeantwortete Rückfragen.</span></div>
+      </div>
+    </div>
+
+    <!-- 4 Ausarbeitung -->
+    <div class="phase">
+      <div class="rail"><div class="num">3</div></div>
+      <div class="pbody">
+        <div class="ptitle">
+          <h3>Ausarbeiten mit Vollanalyse</h3>
+          <div class="status"><span class="st">elaboration</span></div>
+        </div>
+        <div class="cols">
+          <div class="box">
+            <h4>Mensch</h4>
+            <ul>
+              <li>Mentor:in und Ideengeber:in arbeiten den Steckbrief aus, planen Experimente, rechnen den Business Case.</li>
+              <li>Jede KI-Aussage lässt sich einzeln korrigieren; jeder Baustein bekommt einen Prüfstatus.</li>
+              <li>Steckbrief-Entwurf und Experiment werden erst mit „Übernehmen“ Teil der Idee.</li>
+              <li>Auf Wunsch des Mandanten müssen alle Bausteine vor Gate 2 geprüft sein.</li>
+            </ul>
+          </div>
+          <div class="box kibox">
+            <h4>KI, automatisch und auf Klick</h4>
+            <div class="agent">
+              <div class="agent-top"><b>Vollanalyse</b><code>full_analysis</code></div>
+              <div class="trig"><span class="badge auto">Spur „Ausarbeiten“ an Gate 1</span><span class="badge click">„Neu erstellen“</span><span class="badge cls">tief</span></div>
+              <p>Neun Bausteine nacheinander, Details im nächsten Abschnitt. Fällt ein Baustein aus, laufen die anderen weiter. Budget-, Freigabe- oder Vertraulichkeitsfehler stoppen den ganzen Lauf.</p>
+            </div>
+          </div>
+        </div>
+        <div class="auto-note"><span class="tag">FRISTEN-ENGINE</span><span>Erinnert vor dem Ende der Timebox, meldet Überschreitung, erinnert an laufende Experimente und holt geparkte Ideen am Wiedervorlagetag zurück in die Ausarbeitung.</span></div>
+      </div>
+    </div>
+
+    <!-- Gate 2 -->
+    <div class="phase gate">
+      <div class="rail"><div class="num"><span>G2</span></div></div>
+      <div class="pbody">
+        <div class="ptitle">
+          <h3>Gate 2: Das Gremium entscheidet</h3>
+          <div class="status"><span class="st">elaboration</span><span class="st">→ implementing · piloting · integrated · parked · rejected</span></div>
+        </div>
+        <div class="cols">
+          <div class="box">
+            <h4>Mensch</h4>
+            <ul>
+              <li>Das Gremium berät die Ideen einer Sitzung und entscheidet: Umsetzen, Pilot, Integrieren, Parken mit Wiedervorlage oder Ablehnen.</li>
+              <li>Für Umsetzen, Pilot und Integrieren braucht es eine verantwortliche Person und einen Termin.</li>
+              <li>Delegierte Entscheidungen sind möglich und als solche gekennzeichnet.</li>
+            </ul>
+          </div>
+          <div class="box kibox">
+            <h4>KI auf Klick</h4>
+            <div class="agent">
+              <div class="agent-top"><b>Gremium-Vorlage</b><code>gate2_brief</code></div>
+              <div class="trig"><span class="badge click">„Vorlage erstellen“ in der Sitzung</span><span class="badge cls">tief</span></div>
+              <p>Verdichtet jede Idee der Sitzung auf eine Seite: Problem, Lösung, Nutzen, Aufwand, Risiken, Vorgehen, dazu je höchstens vier Stärken, Risiken und offene Fragen. Zahlen aus Steckbrief und Business Case behalten ihre Kennzeichnung.</p>
+              <p class="guard">Das Portal erfasst, wie lange Gremiumsmitglieder eine Vorlage gelesen haben.</p>
+            </div>
+            <div class="agent">
+              <div class="agent-top"><b>Gegenargumente und Pre-Mortem</b><code>counterarguments</code></div>
+              <div class="trig"><span class="badge auto">Teil der Vollanalyse</span><span class="badge cls">tief</span></div>
+              <p>Die 3 bis 5 stärksten sachlichen Gegenargumente und die Frage „Es ist ein Jahr später und die Idee ist gescheitert. Warum?“, mit Frühwarnzeichen. Damit das Gremium nicht nur bestätigt.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Umsetzung -->
+    <div class="phase">
+      <div class="rail"><div class="num">4</div></div>
+      <div class="pbody">
+        <div class="ptitle">
+          <h3>Umsetzen, Pilotieren, Integrieren</h3>
+          <div class="status"><span class="st">fast_lane</span><span class="st">implementing</span><span class="st">piloting</span><span class="st">integrated</span><span class="st">→ completed</span></div>
+        </div>
+        <div class="cols">
+          <div class="box">
+            <h4>Mensch</h4>
+            <ul>
+              <li>Die verantwortliche Person nimmt die Umsetzung an, meldet Fortschritt und schließt mit Ist-Nutzen ab.</li>
+              <li>Übergabe an Jira, ServiceNow oder Azure DevOps über Konnektoren; der Status kommt von dort zurück.</li>
+            </ul>
+          </div>
+          <div class="box kibox">
+            <h4>KI auf Klick</h4>
+            <div class="agent">
+              <div class="agent-top"><b>Umsetzungspaket</b><code>implementation_package</code></div>
+              <div class="trig"><span class="badge click">„Paket erzeugen“ bei der Übergabe</span><span class="badge cls">tief</span></div>
+              <p>Schreibt aus Steckbrief, Zieltermin und Zielkanal ein Briefing und User Stories für das Zielsystem. Eine Person bearbeitet sie, bevor sie übergeben werden.</p>
+            </div>
+          </div>
+        </div>
+        <div class="auto-note"><span class="tag">FRISTEN-ENGINE</span><span>Ist der Zieltermin überschritten, bekommt die verantwortliche Person eine Erinnerung. Konnektoren werden regelmäßig nach dem Status abgefragt.</span></div>
+      </div>
+    </div>
+
+    <!-- Gate 3 -->
+    <div class="phase gate">
+      <div class="rail"><div class="num"><span>G3</span></div></div>
+      <div class="pbody">
+        <div class="ptitle">
+          <h3>Gate 3: Wirkung nachmessen und anerkennen</h3>
+          <div class="status"><span class="st">completed</span><span class="st">Wirkungsreview nach 3 Monaten</span></div>
+        </div>
+        <div class="cols">
+          <div class="box">
+            <h4>Mensch</h4>
+            <ul>
+              <li>Das Wirkungsreview vergleicht Plan-Nutzen und Ist-Nutzen; eine zweite Person bestätigt.</li>
+              <li>Messwerte können auch über Konnektoren kommen.</li>
+              <li>Ideengeber:innen werden anerkannt; Auswertungen erst ab 5 Personen.</li>
+            </ul>
+          </div>
+          <div class="box kibox">
+            <h4>KI auf Klick</h4>
+            <div class="agent">
+              <div class="agent-top"><b>Erfolgsgeschichte</b><code>success_story</code></div>
+              <div class="trig"><span class="badge click">Klick durch das Triage-Team</span><span class="badge cls">schnell</span></div>
+              <p>Entwurf für die interne Kommunikation, höchstens 180 Wörter: Ausgangslage, Idee, Umsetzung, belegter Ist-Nutzen. Bei Einsparungen in kWh nennt sie die CO₂-Entsprechung. Keine Namen.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================ Vollanalyse ============================ -->
+<section aria-labelledby="fa">
+  <div class="sec-head">
+    <div class="eyebrow">Vollanalyse im Detail</div>
+    <h2 id="fa">Neun Bausteine, in dieser Reihenfolge</h2>
+    <p>Der Worker führt sie nacheinander aus, weil spätere Bausteine auf frühere aufbauen. Jeder Baustein lässt sich je Ideentyp abschalten; ein abgeschalteter Baustein steht als „übersprungen“ im Protokoll.</p>
+  </div>
+  <div class="pipe-scroll" tabindex="0" aria-label="Vollanalyse, seitlich scrollbar">
+    <div class="pipe">
+      <div class="pstep research"><span class="n">VORHER</span><b>Recherche</b><span>Interne Ideen, 3 Websuchen, 1 Patentsuche, Seitenabruf für die Quellenprüfung</span></div>
+      <div class="pstep"><span class="n">1</span><b>Wettbewerb</b><code>competition</code><span>Wettbewerber und Ersatzprodukte, oder fertige Lösungen und Open Source</span></div>
+      <div class="pstep"><span class="n">2</span><b>Patente</b><code>patents</code><span>Stand der Technik, keine rechtliche Bewertung</span></div>
+      <div class="pstep"><span class="n">3</span><b>Positionierung</b><code>positioning</code><span>Karte mit 2 Achsen, Empfehlung kaufen, bauen, Prozess ändern</span></div>
+      <div class="pstep"><span class="n">4</span><b>Markt</b><code>market_size</code> <code>internal_market</code><span>Produkt: Marktgröße als Spanne, top-down und bottom-up. Intern: Lösungsmarkt und Hebel</span></div>
+      <div class="pstep"><span class="n">5</span><b>Business Case</b><code>business_case</code><span>KI liefert Annahmen, der Code rechnet 3 Szenarien, Amortisation, Sensitivität</span></div>
+      <div class="pstep"><span class="n">6</span><b>Risiko-Check</b><code>risk_check</code><span>Ampel für Datenschutz, KI-Verordnung, Sicherheit, Recht, Patent, Arbeitnehmererfindung</span></div>
+      <div class="pstep"><span class="n">7</span><b>Experiment</b><code>experiment</code><span>Kleinster Test der größten Unsicherheit mit Erfolgskriterium</span></div>
+      <div class="pstep"><span class="n">8</span><b>Gegenargumente</b><code>counterarguments</code><span>Stärkste Einwände und Pre-Mortem</span></div>
+      <div class="pstep"><span class="n">9</span><b>Steckbrief-Entwurf</b><code>dossier_draft</code><span>Fasst alles zusammen, Seite 1 mit höchstens 250 Wörtern</span></div>
+    </div>
+    <div class="deps">
+      <span><b>3</b> nutzt das Ergebnis von 1</span>
+      <span><b>5</b> nutzt den Hebel oder die Marktgröße aus 4</span>
+      <span><b>7</b> nutzt die Risiken aus 6</span>
+      <span><b>8</b> und <b>9</b> nutzen alle vorherigen Bausteine</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ KI-Gateway ============================ -->
+<section aria-labelledby="gw">
+  <div class="sec-head">
+    <div class="eyebrow">Was bei jedem KI-Aufruf passiert</div>
+    <h2 id="gw">Der Weg durch das KI-Gateway</h2>
+    <p>Kein Agent spricht direkt mit einem Modell. Jeder Aufruf geht durch <code>runAgent</code> in <code>server/src/ai/gateway.ts</code> und durchläuft diese Prüfungen, bevor ein Ergebnis bei der Idee landet.</p>
+  </div>
+  <div class="chain">
+    <div class="cstep"><b>Eingeschaltet?</b><p>KI für den Arbeitsbereich und der einzelne Agent müssen aktiv sein.</p><span class="stop">sonst: AI_DISABLED</span></div>
+    <div class="cstep"><b>Modell wählen</b><p>Je Agent oder je Klasse: schnell, tief, Bild, Sprache. Vertrauliche Inhalte gehen immer an das Modell „vertraulich“, und das muss lokal laufen.</p><span class="stop">sonst: AI_CONFIDENTIAL</span></div>
+    <div class="cstep"><b>Freigabe prüfen</b><p>Ein Agent läuft erst, wenn er auf dem KI-Testsatz seinen Mindestwert erreicht hat.</p><span class="stop">sonst: AI_EVAL_PENDING</span></div>
+    <div class="cstep"><b>Kontingent und Budget</b><p>Paket-Kontingent für externe Modelle, Budget je Idee und Monat. Jeder Versuch wird vorher geschätzt.</p><span class="stop">sonst: AI_QUOTA · AI_BUDGET</span></div>
+    <div class="cstep"><b>Aufruf mit Schema</b><p>Die Antwort muss dem festen Schema entsprechen; ein zweiter Versuch ist erlaubt. Antwortet ein Ersatzmodell, wird es gegen den Testsatz geprüft.</p></div>
+    <div class="cstep"><b>Protokoll</b><p>Modell, Anbieter, Standort, Kosten, Quellen und Suchanfragen jeder Aktion. Daraus entsteht der Datenschutznachweis je Idee.</p></div>
+    <div class="cstep"><b>Quellen prüfen und speichern</b><p>Fakten werden mit den abgerufenen Seiten verglichen, jede Aussage ist Fakt, Annahme oder Schätzung. Das Ergebnis wird versioniert gespeichert.</p></div>
+    <div class="cstep"><b>Mensch übernimmt</b><p>Prüfen, einzelne Aussagen korrigieren, per Klick übernehmen. Die KI schreibt selbst nichts in die Idee.</p></div>
+  </div>
+  <div class="auto-note"><span class="tag">OHNE ANBIETER</span><span>Im Auslieferungszustand antwortet ein eingebauter, regelbasierter Anbieter. Er erfindet keine Beträge oder Marktzahlen, sondern stellt Leitfragen. Echte Modelle (Anthropic oder OpenAI-kompatibel, lokal, EU oder anderswo gehostet) stellt der Admin unter Einstellungen › KI ein.</span></div>
+</section>
+
+<!-- ============================ Querschnitt ============================ -->
+<section aria-labelledby="qs">
+  <div class="sec-head">
+    <div class="eyebrow">Außerhalb des Ideenflusses</div>
+    <h2 id="qs">Weitere KI-Funktionen</h2>
+    <p>Diese Agenten hängen nicht an einer einzelnen Station, sondern helfen bei Steuerung, Strategie und Betrieb.</p>
+  </div>
+  <div class="tbl-scroll" tabindex="0">
+    <table>
+      <thead><tr><th>Funktion</th><th>Auslöser</th><th>Wer</th><th>Was sie tut</th></tr></thead>
+      <tbody>
+        <tr><td><b>Portfolio fragen</b><code>portfolio_query</code></td><td><span class="badge click">Frage eingeben</span></td><td>Triage, Gremium, Leitung, Admin</td><td>Übersetzt eine Frage in natürlicher Sprache in einen Filter. Der Code prüft den Filter und führt ihn aus; die KI sieht die Ideen dabei nicht.</td></tr>
+        <tr><td><b>Übersetzen</b><code>translate</code></td><td><span class="badge click">Klick an Idee oder Kommentar</span></td><td>alle mit Lesezugriff</td><td>Übersetzung erscheint neben dem Original.</td></tr>
+        <tr><td><b>Trend-Hinweise</b><code>trend_digest</code></td><td><span class="badge auto">wöchentlich, am eingestellten Wochentag</span> <span class="badge click">oder manuell</span></td><td>Sponsoren im Trendradar</td><td>Sucht im Web nach Trends je Themenfeld und schickt sie den Sponsoren. Läuft nur mit eingerichteter Websuche.</td></tr>
+        <tr><td><b>Trends zuordnen</b><code>trend_assign</code></td><td><span class="badge click">„Zuordnen“ im Radar</span></td><td>Radar-Verantwortliche</td><td>Schlägt Verknüpfungen zwischen Trends und Ideen vor; jede wird angenommen oder verworfen.</td></tr>
+        <tr><td><b>Problem-Cluster</b><code>problem_clusters</code></td><td><span class="badge click">Quelle abrufen oder CSV laden</span></td><td>Radar-Verantwortliche</td><td>Bündelt viele Meldungen aus Konnektoren oder CSV zu Problemclustern. Daraus wird per Klick ein Problem oder eine Challenge.</td></tr>
+        <tr><td><b>Challenge-Vorschläge</b><code>challenge_suggestions</code></td><td><span class="badge click">beim Anlegen einer Challenge</span></td><td>Challenge-Verantwortliche</td><td>Macht aus einem Strategiedokument 3 bis 5 Challenges mit Leitfrage „Wie können wir …?“.</td></tr>
+        <tr><td><b>Importhilfe</b><code>import_cleanup</code></td><td><span class="badge click">Datei importieren</span></td><td>Admin</td><td>Bereinigt Zeilen aus Alt-Systemen; jede Zeile steht neben dem Original, ein Mensch bestätigt den Import.</td></tr>
+        <tr><td><b>Prozessassistent</b><code>process_proposal</code></td><td><span class="badge click">Vorschlag anfordern</span></td><td>Admin</td><td>Schlägt Fristen, Schwellen und Einstellungen für den Prozess vor; erst „Übernehmen“ ändert etwas.</td></tr>
+        <tr><td><b>Qualitätsprüfung</b><code>eval_run</code> <code>eval_judge</code></td><td><span class="badge auto">bei Einrichtung und Konfigurationsänderung</span> <span class="badge click">oder manuell</span></td><td>Admin</td><td>Prüft jeden Agenten gegen den KI-Testsatz und gibt ihn frei. Ein KI-Gutachter ist optional und sieht nie echte Ideen. Dazu zieht der Job-Lauf monatlich eine Stichprobe echter Ergebnisse für die Prüfung durch Menschen.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================ Architektur ============================ -->
+<section aria-labelledby="ar">
+  <div class="sec-head">
+    <div class="eyebrow">Bausteine</div>
+    <h2 id="ar">Wie das System gebaut ist</h2>
+    <p>Ein Code für den internen Einsatz und für SaaS. Jede Anfrage läuft im Mandantenkontext, die Datenbank trennt Mandanten mit Row-Level-Security. Der Ideenfluss wartet nie auf ein Modell: KI-Arbeit landet als Auftrag in einer Warteschlange.</p>
+  </div>
+  <div class="arch-scroll" tabindex="0" aria-label="Architektur, seitlich scrollbar">
+    <div class="arch">
+      <div class="acol">
+        <div class="eyebrow">Zugänge</div>
+        <div class="ab"><b>Web-App</b><span>React und Vite, auch mobil</span></div>
+        <div class="ab"><b>Chat</b><span>Teams und andere Chat-Kanäle, ein- und ausgehend</span></div>
+        <div class="ab"><b>Externes Portal</b><span>Kund:innen und Partner, mit Moderation</span></div>
+        <div class="ab"><b>Öffentliche API</b><span>API-Tokens, Webhooks, OpenAPI</span></div>
+        <div class="ab"><b>Anmeldung</b><span>eigene Konten, Einladungslink, SAML/OIDC, SCIM</span></div>
+      </div>
+      <div class="acol">
+        <div class="eyebrow">Kern</div>
+        <div class="ab core"><b>API-Server (Fastify)</b><span>Workflow mit Gates und Fristen, Rechte je Rolle, Audit-Log, i18n Deutsch und Englisch</span></div>
+        <div class="flowtag">↓ withTenant() · Rolle ideenportal_app</div>
+        <div class="ab db"><b>PostgreSQL</b><span>Row-Level-Security je Mandant, pgvector für Dubletten, KI-Ergebnisse versioniert, KI-Protokoll, Warteschlange <code>ai_jobs</code></span></div>
+        <div class="flowtag">↓ FOR UPDATE SKIP LOCKED</div>
+        <div class="ab kib"><b>KI-Worker, alle 5 s</b><span>Kurzanalyse, Vollanalyse, Trend-Hinweise, Qualitätsläufe. Wiederholt mit wachsendem Abstand.</span></div>
+        <div class="ab tim"><b>Job-Lauf, alle 15 min</b><span>Fristen, Erinnerungen, Eskalation, Wiedervorlage, Timebox, Stichprobe, Trends einplanen, Löschfristen, Mail, Webhooks, SIEM, Konnektoren, Messwerte</span></div>
+      </div>
+      <div class="acol">
+        <div class="eyebrow">Außen</div>
+        <div class="ab kib"><b>KI-Gateway → Modelle</b><span>regelbasiert, Anthropic oder OpenAI-kompatibel; lokal, EU oder andere Hosting-Orte</span></div>
+        <div class="ab kib"><b>Suche</b><span>SearXNG (lokal) oder Brave, Patentsuche, Seitenabruf ohne privates Netz</span></div>
+        <div class="ab"><b>Zielsysteme</b><span>Jira, ServiceNow, Azure DevOps: Übergabe und Statusrückmeldung</span></div>
+        <div class="ab"><b>Mail und SIEM</b><span>Benachrichtigungen über Postausgang, Audit-Weiterleitung</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ Leitplanken ============================ -->
+<section aria-labelledby="lp">
+  <div class="sec-head">
+    <div class="eyebrow">Regeln, die jeder Agent mitbekommt</div>
+    <h2 id="lp">Leitplanken der KI</h2>
+  </div>
+  <div class="rules">
+    <div class="rule"><b>Die KI entscheidet nichts</b><p>Sie liefert Information und Vorschläge. Spur, Gremiumsentscheidung und Wirkung bestimmen Menschen.</p></div>
+    <div class="rule"><b>Keine Bewertung von Personen</b><p>Bewertet werden nur Ideen und Sachverhalte. Zusammenfassungen und Geschichten nennen keine Namen.</p></div>
+    <div class="rule"><b>Jede Zahl gekennzeichnet</b><p>Fakt nur mit Quellennummer, sonst Annahme oder Schätzung mit Konfidenz. Zitierte Aussagen werden gegen die Seite geprüft.</p></div>
+    <div class="rule"><b>Vertrauliches bleibt im Haus</b><p>Vertrauliche Ideen, mögliche Erfindungen und erkannte Meldungen gehen nie an externe Modelle oder Suchdienste.</p></div>
+    <div class="rule"><b>Schutz vor Prompt-Injection</b><p>Ideen, Kommentare, Dokumente und Suchtreffer stehen als markierte Datenblöcke im Prompt und gelten nie als Anweisung. Agenten haben keine Schreibwerkzeuge.</p></div>
+    <div class="rule"><b>Kein Meldekanal</b><p>Das Portal ist kein Kanal nach dem Hinweisgeberschutzgesetz. Die Abgrenzungsprüfung weist auf den richtigen Kanal hin.</p></div>
+  </div>
+</section>
+
+<footer>
+  <span>Quelle: Repository seb-nsu/Ideaportal, vor allem <code>server/src/ai/agents.ts</code>, <code>pipeline.ts</code>, <code>hooks.ts</code>, <code>gateway.ts</code>, <code>settings.ts</code>, <code>services/workflow.ts</code>, <code>jobs/deadlines.ts</code>, <code>routes/ai.ts</code>.</span>
+  <span>Fristen, Budgets und Intervalle sind die Standardwerte; jeder Mandant kann sie ändern.</span>
+</footer>
+
+</div>
+</body>
+</html>
